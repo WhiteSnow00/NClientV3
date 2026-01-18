@@ -32,11 +32,35 @@ jobs:
       - name: Grant execute permission for Gradle wrapper
         run: chmod +x ./gradlew
 
-      - name: Gradle build (Post28 Debug)
-        run: ./gradlew --no-daemon --stacktrace assemblePost28Debug
+      - name: Resolve Gradle tasks (prefer post28)
+        id: tasks
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      - name: Gradle lint (Post28 Debug)
-        run: ./gradlew --no-daemon --stacktrace lintPost28Debug
+          if ./gradlew -q help --task assemblePost28Debug >/dev/null 2>&1; then
+            echo "debug_task=assemblePost28Debug" >> "$GITHUB_OUTPUT"
+          else
+            echo "debug_task=assembleDebug" >> "$GITHUB_OUTPUT"
+          fi
+
+          if ./gradlew -q help --task assemblePost28Release >/dev/null 2>&1; then
+            echo "release_task=assemblePost28Release" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_task=assembleRelease" >> "$GITHUB_OUTPUT"
+          fi
+
+          if ./gradlew -q help --task lintPost28Debug >/dev/null 2>&1; then
+            echo "lint_task=lintPost28Debug" >> "$GITHUB_OUTPUT"
+          else
+            echo "lint_task=lintDebug" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Gradle build (Debug)
+        run: ./gradlew --no-daemon --stacktrace ${{ steps.tasks.outputs.debug_task }}
+
+      - name: Gradle lint (Debug)
+        run: ./gradlew --no-daemon --stacktrace ${{ steps.tasks.outputs.lint_task }}
 
       - name: Detect signing secrets
         id: signing
@@ -63,26 +87,22 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          ./gradlew --no-daemon --stacktrace assemblePost28Release \
+          ./gradlew --no-daemon --stacktrace ${{ steps.tasks.outputs.release_task }} \
             -Pandroid.injected.signing.store.file=/tmp/keystore.jks \
             -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
 
 
-      - name: Gradle build (Post28 Release - unsigned)
+      - name: Gradle build (Release - unsigned)
         if: ${{ steps.signing.outputs.available != 'true' }}
-        run: ./gradlew --no-daemon --stacktrace assemblePost28Release
-
-      - name: Collect APKs
-        run: |
-          mkdir -p artifacts
-          find . -type f -path "*build/outputs/apk*/*.apk" -print -exec cp -v {} artifacts/ \;
-          ls -lah artifacts
+        run: ./gradlew --no-daemon --stacktrace ${{ steps.tasks.outputs.release_task }}
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: apks-${{ github.sha }}
-          path: artifacts/*.apk
+          path: |
+            app/build/outputs/apk/**/debug/*.apk
+            app/build/outputs/apk/**/release/*.apk
           if-no-files-found: error
