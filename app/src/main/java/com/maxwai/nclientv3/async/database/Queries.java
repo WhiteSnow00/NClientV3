@@ -6,6 +6,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.SparseIntArray;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -805,11 +806,21 @@ public class Queries {
             GalleryTable.TITLE_PRETTY
         );
 
-        private static final String FAVORITE_JOIN_GALLERY = String.format(Locale.US, "%s INNER JOIN %s ON %s=%s",
+        // Also left-join status color so RecyclerView binds don't query the DB.
+        private static final String FAVORITE_JOIN_GALLERY = String.format(Locale.US,
+            "%s INNER JOIN %s ON %s=%s " +
+                "LEFT JOIN %s ON %s=%s " +
+                "LEFT JOIN %s ON %s=%s",
             FavoriteTable.TABLE_NAME,
             GalleryTable.TABLE_NAME,
             FavoriteTable.ID_GALLERY,
-            GalleryTable.IDGALLERY
+            GalleryTable.IDGALLERY,
+            StatusMangaTable.TABLE_NAME,
+            GalleryTable.IDGALLERY,
+            StatusMangaTable.GALLERY,
+            StatusTable.TABLE_NAME,
+            StatusMangaTable.NAME,
+            StatusTable.NAME
         );
 
         public static void addFavorite(Gallery gallery) {
@@ -992,6 +1003,41 @@ public class Queries {
                     status = StatusManager.getByName(StatusManager.DEFAULT_STATUS);
                 return status;
             }
+        }
+
+        /**
+         * Bulk-load status colors for a set of gallery IDs in a single query (batched to avoid SQLite bind limits).
+         * Intended for background threads to keep RecyclerView binds non-blocking.
+         */
+        @NonNull
+        public static SparseIntArray getStatusColors(@NonNull int[] galleryIds) {
+            SparseIntArray out = new SparseIntArray(galleryIds.length);
+            if (galleryIds.length == 0) return out;
+            final int batchSize = 500; // keep well under SQLite's 999 bind limit
+            for (int start = 0; start < galleryIds.length; start += batchSize) {
+                int end = Math.min(galleryIds.length, start + batchSize);
+                int len = end - start;
+                StringBuilder sql = new StringBuilder(128 + len * 2);
+                sql.append("SELECT sm.").append(GALLERY).append(", st.").append(StatusTable.COLOR)
+                    .append(" FROM ").append(TABLE_NAME).append(" sm")
+                    .append(" INNER JOIN ").append(StatusTable.TABLE_NAME).append(" st ON sm.").append(NAME).append("=st.").append(StatusTable.NAME)
+                    .append(" WHERE sm.").append(GALLERY).append(" IN (");
+                String[] args = new String[len];
+                for (int i = 0; i < len; i++) {
+                    if (i > 0) sql.append(',');
+                    sql.append('?');
+                    args[i] = Integer.toString(galleryIds[start + i]);
+                }
+                sql.append(')');
+                try (Cursor c = db.rawQuery(sql.toString(), args)) {
+                    if (c.moveToFirst()) {
+                        do {
+                            out.put(c.getInt(0), c.getInt(1));
+                        } while (c.moveToNext());
+                    }
+                }
+            }
+            return out;
         }
 
         public static void insert(GenericGallery gallery, String s) {

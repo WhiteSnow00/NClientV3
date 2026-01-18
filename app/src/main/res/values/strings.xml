@@ -153,7 +153,7 @@
     <string name="random_manga">Random gallery</string>
     <string name="save_page">Save page</string>
     <string name="page_count_format" formatted="true">%d pages</string>
-    <string name="upload_date_format" formatted="true">Uploaded on %s at %s</string>
+    <string name="upload_date_format" formatted="true">Uploaded on %1$s at %2$s</string>
     <string name="favorite_count_format" formatted="true">%d favorites</string>
     <string name="favorite_manga">Favorite galleries</string>
     <string name="setting_on_remove_ignored">The galleries with ignored tags will not be shown</string>
@@ -165,7 +165,7 @@
     <string name="no_updates_found">No updates found</string>
     <string name="error_retrieving">Error in retrieving latest version</string>
     <string name="new_version_found">New version found</string>
-    <string name="update_version_format" formatted="true">Update from version %s to version %s?\n\nChangelog:\n%s</string>
+    <string name="update_version_format" formatted="true">Update from version %1$s to version %2$s?\n\nChangelog:\n%3$s</string>
     <string name="clear_this_list">Clear this list?</string>
     <string name="set_minimum_count">Set minimum count</string>
     <string name="sort_by_title">Sort by title</string>

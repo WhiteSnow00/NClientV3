@@ -80,7 +80,7 @@
     <string name="random_manga">Rastgele Galeri</string>
     <string name="save_page">Sayfayı kaydet</string>
     <string name="page_count_format" formatted="true">%d Sayfa</string>
-    <string name="upload_date_format" formatted="true">%s tarihinde %s saatinde yüklendi</string>
+    <string name="upload_date_format" formatted="true">%1$s tarihinde %2$s saatinde yüklendi</string>
     <string name="favorite_count_format" formatted="true">%d Favori</string>
     <string name="favorite_manga">Favoriler</string>
     <string name="setting_on_remove_ignored">Dikkate alınmayan etiket içeren galeriler gösterilmeyecek</string>
@@ -92,7 +92,7 @@
     <string name="no_updates_found">Zaten en son sürümü kullanıyorsunuz!</string>
     <string name="error_retrieving">Güncelleme bilgileri alınırken bir sorun oluştu</string>
     <string name="new_version_found">Yeni sürüm bulundu</string>
-    <string name="update_version_format" formatted="true">%s bu sürümden %s bu sürüme güncellensin mi?  Değişim kaydı: %s</string>
+    <string name="update_version_format" formatted="true">%1$s bu sürümden %2$s bu sürüme güncellensin mi?  Değişim kaydı: %3$s</string>
     <string name="clear_this_list">Bu listeyi temizle?</string>
     <string name="set_minimum_count">Minimum sayıyı ayarla</string>
     <string name="sort_by_title">Başlığa göre sırala</string>

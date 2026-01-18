@@ -36,12 +36,14 @@ public class GalleryFolder implements Parcelable, Iterable<PageFile> {
     private static final Pattern FILE_PATTERN = Pattern.compile("^0*(\\d{1,9})\\.(gif|png|jpg|webp)$", Pattern.CASE_INSENSITIVE);
     private static final Pattern IDFILE_PATTERN = Pattern.compile("^\\.(\\d{1,6})$");
     private static final String NOMEDIA_FILE = ".nomedia";
+    private static final String GALLERY_DATA_FILE = ".gallery.json";
     private final SparseArrayCompat<PageFile> pageArray = new SparseArrayCompat<>();
     private final File folder;
     private int id = SpecialTagIds.INVALID_ID;
     private int max = -1;
     private int min = Integer.MAX_VALUE;
     private File nomedia;
+    private File galleryDataFile;
 
     public GalleryFolder(@NonNull String child) {
         this(Global.DOWNLOADFOLDER, child);
@@ -105,6 +107,7 @@ public class GalleryFolder implements Parcelable, Iterable<PageFile> {
         }
 
         if (nomedia == null && name.equals(NOMEDIA_FILE)) nomedia = f;
+        if (galleryDataFile == null && name.equals(GALLERY_DATA_FILE)) galleryDataFile = f;
     }
 
     private int elaborateId(Matcher matcher) {
@@ -116,7 +119,7 @@ public class GalleryFolder implements Parcelable, Iterable<PageFile> {
     }
 
     public File getGalleryDataFile() {
-        return nomedia;
+        return galleryDataFile != null ? galleryDataFile : nomedia;
     }
 
     public File getFolder() {

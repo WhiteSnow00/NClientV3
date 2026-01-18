@@ -110,8 +110,12 @@ public class LocalGallery extends GenericGallery {
     @NonNull
     private GalleryData readGalleryData() {
         if (folder == null) return GalleryData.fakeData();
-        File nomedia = folder.getGalleryDataFile();
-        try (JsonReader reader = new JsonReader(new FileReader(nomedia))) {
+        File dataFile = folder.getGalleryDataFile();
+        if (dataFile == null || !dataFile.isFile()) {
+            hasAdvancedData = false;
+            return GalleryData.fakeData();
+        }
+        try (JsonReader reader = new JsonReader(new FileReader(dataFile))) {
             return new GalleryData(reader);
         } catch (Exception ignore) {
         }

@@ -13,6 +13,8 @@ import android.net.Uri;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.FileProvider;
+import androidx.work.BackoffPolicy;
+import androidx.work.Constraints;
 import androidx.work.Data;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
@@ -30,19 +32,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class CreatePdfOrZip extends Worker {
-    private static final String GALLERY_ID_KEY = "GALLERY_ID";
+    private static final String GALLERY_DIR_KEY = "GALLERY_DIR";
     private static final String PDF_OR_ZIP_KEY = "PDF_OR_ZIP";
-    private static final Map<Integer, LocalGallery> galleryMap = Collections.synchronizedMap(new HashMap<>());
+    private static final int PDF_MAX_PIXELS = 4_000_000;
     private int notId;
     private int totalPage;
     private NotificationCompat.Builder notification;
@@ -52,18 +51,43 @@ public class CreatePdfOrZip extends Worker {
     }
 
     public static void startWork(Context context, LocalGallery gallery, boolean pdf) {
-        int id;
-        do {
-            id = new Random().nextInt(Integer.MAX_VALUE);
-        } while (galleryMap.containsKey(id));
-        galleryMap.put(id, gallery);
+        NotificationSettings.requestPostNotificationsIfNeeded(context);
+        String directory = gallery.getDirectory().getAbsolutePath();
+        Constraints constraints = new Constraints.Builder()
+            .setRequiresStorageNotLow(true)
+            .setRequiresBatteryNotLow(true)
+            .build();
         WorkRequest createPdfOrZipWorkRequest = new OneTimeWorkRequest.Builder(CreatePdfOrZip.class)
             .setInputData(new Data.Builder()
-                .putInt(GALLERY_ID_KEY, id)
+                .putString(GALLERY_DIR_KEY, directory)
                 .putBoolean(PDF_OR_ZIP_KEY, pdf)
                 .build())
+            .setConstraints(constraints)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .build();
         WorkManager.getInstance(context).enqueue(createPdfOrZipWorkRequest);
+    }
+
+    private static int computeInSampleSize(int width, int height, int maxPixels) {
+        long pixels = (long) width * (long) height;
+        int sample = 1;
+        while (pixels / ((long) sample * (long) sample) > maxPixels) {
+            sample *= 2;
+        }
+        return Math.max(1, sample);
+    }
+
+    private static Bitmap decodeForPdf(File page) {
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(page.getAbsolutePath(), bounds);
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = computeInSampleSize(bounds.outWidth, bounds.outHeight, PDF_MAX_PIXELS);
+        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        options.inDither = true;
+        return BitmapFactory.decodeFile(page.getAbsolutePath(), options);
     }
 
     public static boolean hasPDFCapabilities() {
@@ -79,7 +103,6 @@ public class CreatePdfOrZip extends Worker {
     @Override
     public Result doWork() {
         notId = NotificationSettings.getNotificationId();
-        System.gc();
         if (!getInputData().hasKeyWithValueOfType(PDF_OR_ZIP_KEY, Boolean.class)) {
             return Result.failure();
         }
@@ -87,14 +110,16 @@ public class CreatePdfOrZip extends Worker {
         if (pdf && !hasPDFCapabilities()) {
             return Result.failure();
         }
-        int galleryId = getInputData().getInt(GALLERY_ID_KEY, -1);
-        if (galleryId == -1) {
+        String directoryPath = getInputData().getString(GALLERY_DIR_KEY);
+        if (directoryPath == null || directoryPath.trim().isEmpty()) {
             return Result.failure();
         }
-        LocalGallery gallery = galleryMap.remove(galleryId);
-        if (gallery == null) {
+        File directory = new File(directoryPath);
+        if (!directory.isDirectory()) {
             return Result.failure();
         }
+        LocalGallery gallery = new LocalGallery(directory, false);
+        if (!gallery.isValid()) return Result.failure();
         totalPage = gallery.getPageCount();
         preExecute(gallery.getDirectory(), pdf);
         if (pdf) {
@@ -104,7 +129,7 @@ public class CreatePdfOrZip extends Worker {
                 for (int a = 1; a <= gallery.getPageCount(); a++) {
                     page = gallery.getPage(a);
                     if (page == null) continue;
-                    Bitmap bitmap = BitmapFactory.decodeFile(page.getAbsolutePath());
+                    Bitmap bitmap = decodeForPdf(page);
                     if (bitmap != null) {
                         PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(bitmap.getWidth(), bitmap.getHeight(), a).create();
                         PdfDocument.Page p = document.startPage(info);
@@ -155,7 +180,7 @@ public class CreatePdfOrZip extends Worker {
                     out.setLevel(Deflater.BEST_COMPRESSION);
                     File actual;
                     int read;
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[16 * 1024];
                     for (int i = 1; i <= gallery.getPageCount(); i++) {
                         actual = gallery.getPage(i);
                         if (actual == null) continue;

@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.View;
 
 import androidx.annotation.DeprecatedSinceApi;
@@ -23,7 +24,12 @@ import com.maxwai.nclientv3.async.downloader.DownloadGalleryV2;
 import com.maxwai.nclientv3.settings.Database;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.TagV2;
+import com.maxwai.nclientv3.utility.AppExecutors;
+import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.network.NetworkUtil;
+import com.maxwai.nclientv3.BuildConfig;
+
+import java.io.File;
 
 public class CrashApplication extends Application {
 
@@ -42,8 +48,8 @@ public class CrashApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        LogUtility.i("BOOT_MARKER theme-compat-2026-01-18b", "pkg=", getPackageName(), "vc=", BuildConfig.VERSION_CODE, "vn=", BuildConfig.VERSION_NAME, "debug=", BuildConfig.DEBUG);
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
-        Global.initStorage(this);
         //noinspection resource
         Database.setDatabase(new DatabaseHelper(getApplicationContext()).getWritableDatabase());
         String version = Global.getLastVersion(this);
@@ -56,7 +62,14 @@ public class CrashApplication extends Application {
         NetworkUtil.initConnectivity(this);
         TagV2.initMinCount(this);
         TagV2.initSortByName(this);
-        DownloadGalleryV2.loadDownloads(this);
+        // Avoid disk/DB work on the main thread during cold start.
+        AppExecutors.io().execute(() -> {
+            try {
+                DownloadGalleryV2.loadDownloads(this);
+            } catch (Throwable t) {
+                LogUtility.e("Error loading downloads on startup", t);
+            }
+        });
         registerActivityLifecycleCallbacks(new CustomActivityLifecycleCallback());
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             String theme = preferences.getString(getString(R.string.preference_key_theme_select), "");
@@ -76,9 +89,38 @@ public class CrashApplication extends Application {
 
     private void removeOldUpdates() {
         if (!Global.hasStoragePermission(this)) return;
-        Global.recursiveDelete(Global.UPDATEFOLDER);
-        //noinspection ResultOfMethodCallIgnored
-        Global.UPDATEFOLDER.mkdir();
+        AppExecutors.io().execute(() -> {
+            try {
+                // Global.UPDATEFOLDER can be null before Global.initStorage()/initFilesTree runs (race on real devices).
+                File updateFolder = Global.UPDATEFOLDER;
+                if (updateFolder == null) {
+                    updateFolder = resolveUpdateFolderFallback();
+                    LogUtility.w("Global.UPDATEFOLDER was null; using fallback path: ", updateFolder);
+                }
+                if (updateFolder == null) {
+                    LogUtility.w("Unable to resolve update folder; skipping cleanup.");
+                    return;
+                }
+
+                Global.recursiveDelete(updateFolder);
+                if (!updateFolder.exists() && !updateFolder.mkdirs()) {
+                    LogUtility.w("Unable to recreate update folder after cleanup: ", updateFolder);
+                }
+            } catch (Throwable t) {
+                // Never crash the process from background cleanup work.
+                LogUtility.e("Error cleaning update folder", t);
+            }
+        });
+    }
+
+    @Nullable
+    private File resolveUpdateFolderFallback() {
+        File base = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+        if (base == null) base = getExternalFilesDir(null);
+        if (base == null) base = getFilesDir();
+        if (base == null) base = getCacheDir();
+        if (base == null) return null;
+        return new File(new File(base, "NClientV3"), "Update");
     }
 
     private static class CustomActivityLifecycleCallback implements ActivityLifecycleCallbacks {

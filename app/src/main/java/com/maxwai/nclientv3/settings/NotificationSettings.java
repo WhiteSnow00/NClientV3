@@ -1,9 +1,11 @@
 package com.maxwai.nclientv3.settings;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Notification;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -19,6 +21,7 @@ public class NotificationSettings {
     private static final List<Integer> notificationArray = new CopyOnWriteArrayList<>();
     private static NotificationSettings notificationSettings;
     private static int notificationId = 999, maximumNotification;
+    public static final int REQUEST_CODE_POST_NOTIFICATIONS = 2001;
     private final NotificationManagerCompat notificationManager;
 
     private NotificationSettings(NotificationManagerCompat notificationManager) {
@@ -35,6 +38,21 @@ public class NotificationSettings {
         trimArray();
     }
 
+    public static boolean requestPostNotificationsIfNeeded(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true;
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        }
+        if (context instanceof Activity) {
+            ActivityCompat.requestPermissions(
+                (Activity) context,
+                new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                REQUEST_CODE_POST_NOTIFICATIONS
+            );
+        }
+        return false;
+    }
+
     public static void notify(Context context, int notificationId, Notification notification) {
         if (maximumNotification == 0) return;
         notificationArray.remove(Integer.valueOf(notificationId));
@@ -42,13 +60,6 @@ public class NotificationSettings {
         trimArray();
         LogUtility.d("Notification count: " + notificationArray.size());
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return;
         }
         notificationSettings.notificationManager.notify(notificationId, notification);

@@ -33,7 +33,9 @@ import com.maxwai.nclientv3.async.downloader.DownloadObserver;
 import com.maxwai.nclientv3.async.downloader.DownloadQueue;
 import com.maxwai.nclientv3.async.downloader.GalleryDownloaderV2;
 import com.maxwai.nclientv3.components.classes.MultichoiceAdapter;
+import com.maxwai.nclientv3.components.status.StatusManager;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.utility.AppExecutors;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
@@ -190,8 +192,30 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
         if (gallery != null && !gallery.isEmpty()) {
             dataset.removeAll(gallery);
             dataset.addAll(gallery);
+            prefetchStatusColors(gallery);
             sortElements();
             context.runOnUiThread(() -> notifyItemRangeChanged(0, getItemCount()));
+        }
+    }
+
+    private void prefetchStatusColors(@NonNull List<LocalGallery> galleries) {
+        int[] ids = new int[galleries.size()];
+        int count = 0;
+        for (LocalGallery g : galleries) {
+            if (g == null) continue;
+            int id = g.getId();
+            if (id <= 0) continue;
+            if (statuses.indexOfKey(id) >= 0) continue;
+            ids[count++] = id;
+        }
+        if (count == 0) return;
+        int[] queryIds = new int[count];
+        System.arraycopy(ids, 0, queryIds, 0, count);
+        SparseIntArray loaded = Queries.StatusMangaTable.getStatusColors(queryIds);
+        int defaultColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
+        for (int i = 0; i < count; i++) {
+            int id = queryIds[i];
+            statuses.put(id, loaded.get(id, defaultColor));
         }
     }
 
@@ -303,22 +327,25 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
             return true;
         });*/
         int statusColor = statuses.get(ent.getId(), 0);
-        if (statusColor == 0) {
-            statusColor = Queries.StatusMangaTable.getStatus(ent.getId()).color;
-            statuses.put(ent.getId(), statusColor);
-        }
+        if (statusColor == 0) statusColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
         holder.title.setBackgroundColor(statusColor);
     }
 
     public void updateColor(int id) {
         if (id < 0) return;
-        statuses.put(id, Queries.StatusMangaTable.getStatus(id).color);
-        for (int i = 0; i < filter.size(); i++) {
-            Object o = filter.get(i);
-            if (!(o instanceof LocalGallery)) continue;
-            LocalGallery lg = (LocalGallery) o;
-            if (lg.getId() == id) notifyItemChanged(i);
-        }
+        new Thread(() -> {
+            statuses.put(id, Queries.StatusMangaTable.getStatus(id).color);
+            for (int i = 0; i < filter.size(); i++) {
+                Object o = filter.get(i);
+                if (!(o instanceof LocalGallery)) continue;
+                LocalGallery lg = (LocalGallery) o;
+                if (lg.getId() == id) {
+                    int pos = i;
+                    context.runOnUiThread(() -> notifyItemChanged(pos));
+                    break;
+                }
+            }
+        }).start();
     }
 
     @Override
@@ -394,16 +421,22 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
         builder.setTitle(R.string.delete_galleries).setMessage(getAllGalleries());
         builder.setPositiveButton(R.string.yes, (dialog, which) -> {
             ArrayList<Object> coll = new ArrayList<>(getSelected());
+            ArrayList<File> toDelete = new ArrayList<>();
             for (Object o : coll) {
                 filter.remove(o);
                 if (o instanceof LocalGallery) {
                     dataset.remove(o);
-                    Global.recursiveDelete(((LocalGallery) o).getDirectory());
+                    toDelete.add(((LocalGallery) o).getDirectory());
                 } else if (o instanceof GalleryDownloaderV2) {
                     DownloadQueue.remove((GalleryDownloaderV2) o, true);
                 }
             }
             context.runOnUiThread(this::notifyDataSetChanged);
+            if (!toDelete.isEmpty()) {
+                AppExecutors.io().execute(() -> {
+                    for (File dir : toDelete) Global.recursiveDelete(dir);
+                });
+            }
         }).setNegativeButton(R.string.no, null).setCancelable(true);
         builder.show();
     }

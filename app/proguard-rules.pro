@@ -14,17 +14,15 @@
 
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+-keepattributes SourceFile,LineNumberTable
 
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--ignorewarnings
--keep class * {
-    public private *;
-}
-#glide proguard
+# Avoid broad keep rules: they effectively disable shrinking/obfuscation and increase APK size/attack surface.
+
+# Glide proguard
 -keep public class * implements com.bumptech.glide.module.GlideModule
 -keep public class * extends com.bumptech.glide.module.AppGlideModule
 -keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
@@ -35,7 +33,11 @@
 -assumenosideeffects class com.maxwai.nclientv3.utility.LogUtility {
     public static void d(...);
     public static void i(...);
-    public static void e(...);
 }
--keep public class * implements com.bumptech.glide.module.GlideModule
+
+# WorkManager uses reflection to instantiate workers from their (obfuscated) class names stored in WorkRequest.
+# Keeping the worker constructors avoids edge-case issues across R8 versions.
+-keep class * extends androidx.work.Worker {
+    public <init>(android.content.Context, androidx.work.WorkerParameters);
+}
 -dontwarn com.bumptech.glide.load.resource.bitmap.VideoDecoder

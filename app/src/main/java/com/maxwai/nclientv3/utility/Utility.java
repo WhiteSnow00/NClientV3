@@ -112,6 +112,16 @@ public class Utility {
         if (b != null) saveImage(b, output);
     }
 
+    /**
+     * Offloads bitmap compression + file writes to a background thread to avoid UI stalls/ANRs.
+     * The drawable-to-bitmap cast is performed on the caller thread (cheap), while compression happens on IO.
+     */
+    public static void saveImageAsync(@NonNull Context context, @Nullable Drawable drawable, @NonNull File output) {
+        Bitmap b = drawable == null ? null : drawableToBitmap(drawable);
+        if (b == null) return;
+        AppExecutors.io().execute(() -> saveImage(b, output));
+    }
+
     private static void saveImage(@NonNull Bitmap bitmap, @NonNull File output) {
         try {
             if (!output.exists())
@@ -144,7 +154,7 @@ public class Utility {
     public static void sendImage(Context context, Drawable drawable, String text) {
         context = context.getApplicationContext();
         try {
-            File tempFile = File.createTempFile("toSend", ".jpg");
+            File tempFile = File.createTempFile("toSend", ".jpg", context.getCacheDir());
             tempFile.deleteOnExit();
             Bitmap image = drawableToBitmap(drawable);
             if (image == null) return;

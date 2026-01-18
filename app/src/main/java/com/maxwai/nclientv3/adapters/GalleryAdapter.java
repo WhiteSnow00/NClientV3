@@ -292,7 +292,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
                     break;
                 case 3:
                     String name = String.format(Locale.US, "%d-%d.jpg", gallery.getId(), pos);
-                    Utility.saveImage(imgView.getDrawable(), new File(Global.SCREENFOLDER, name));
+                    Utility.saveImageAsync(context, imgView.getDrawable(), new File(Global.SCREENFOLDER, name));
                     break;
             }
         }).show();

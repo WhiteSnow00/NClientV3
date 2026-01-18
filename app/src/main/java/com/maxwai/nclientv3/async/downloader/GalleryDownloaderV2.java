@@ -266,16 +266,26 @@ public class GalleryDownloaderV2 {
             if (r.code() != 200) {
                 return false;
             }
-            //noinspection DataFlowIssue
-            long expectedSize = Integer.parseInt(r.header("Content-Length", "-1"));
-            long len = r.body().contentLength();
-            if (len < 0 || expectedSize != len) {
+            if (r.body() == null) return false;
+
+            long expectedLength = r.body().contentLength(); // -1 when unknown (chunked/gzip/etc)
+            File partial = new File(folder, page.getPageName() + ".part");
+            long written = Utility.writeStreamToFile(r.body().byteStream(), partial);
+            if (expectedLength >= 0 && written != expectedLength) {
+                //noinspection ResultOfMethodCallIgnored
+                partial.delete();
                 return false;
             }
-            long written = Utility.writeStreamToFile(r.body().byteStream(), filePath);
-            if (written != len) {
+            if (isCorrupted(partial)) {
                 //noinspection ResultOfMethodCallIgnored
-                filePath.delete();
+                partial.delete();
+                return false;
+            }
+            //noinspection ResultOfMethodCallIgnored
+            filePath.delete();
+            if (!partial.renameTo(filePath)) {
+                //noinspection ResultOfMethodCallIgnored
+                partial.delete();
                 return false;
             }
             return true;
@@ -333,8 +343,12 @@ public class GalleryDownloaderV2 {
 
     private void writeNoMedia() throws IOException {
         File nomedia = new File(folder, ".nomedia");
-        LogUtility.d("NOMEDIA: " + nomedia + " for id " + id);
-        try (FileWriter writer = new FileWriter(nomedia)) {
+        //noinspection ResultOfMethodCallIgnored
+        nomedia.createNewFile();
+
+        File dataFile = new File(folder, ".gallery.json");
+        LogUtility.d("Gallery metadata: " + dataFile + " for id " + id);
+        try (FileWriter writer = new FileWriter(dataFile)) {
             gallery.jsonWrite(writer);
         }
     }

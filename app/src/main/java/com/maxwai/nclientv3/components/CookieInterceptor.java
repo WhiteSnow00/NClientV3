@@ -10,10 +10,10 @@ import com.maxwai.nclientv3.components.views.CFTokenView;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
 
+import java.io.IOException;
 import java.util.HashMap;
 
 public class CookieInterceptor {
-    private static volatile boolean intercepting = false;
     private static volatile boolean webViewHidden = false;
 
     public static void hideWebView() {
@@ -26,71 +26,52 @@ public class CookieInterceptor {
 
     @NonNull
     private final Manager manager;
-    String cookies = null;
-    private CFTokenView web = null;
 
     public CookieInterceptor(@NonNull Manager manager) {
         this.manager = manager;
     }
 
-    private CFTokenView setupWebView() {
+    private void maybeStartCloudflareFlow() {
         CFTokenView tokenView = GeneralActivity.getLastCFView();
-        if (tokenView == null) return null;
+        if (tokenView == null) return;
         tokenView.post(() -> {
             CFTokenView.CFTokenWebView webView = tokenView.getWebView();
             webView.loadUrl(Utility.getBaseUrl());
+            if (!webViewHidden) tokenView.setVisibility(View.VISIBLE);
         });
-        return tokenView;
     }
 
-    @NonNull
-    private CFTokenView getWebView() {
-        while (web == null) {
-            Utility.threadSleep(100);
-            web = setupWebView();
+    /**
+     * Fail-fast cookie interception: never busy-waits and never depends on an Activity/WebView being alive.
+     * If required cookies are missing, triggers the existing Cloudflare/WebView flow (if available) and throws.
+     */
+    public void intercept() throws IOException {
+        if (manager.endInterceptor()) {
+            manager.onFinish();
+            return;
         }
-        return web;
-    }
-
-    private void interceptInternal() {
-        CFTokenView web = getWebView();
-        if(!webViewHidden)
-            web.post(() -> web.setVisibility(View.VISIBLE));
-        CookieManager manager = CookieManager.getInstance();
-        HashMap<String, String> cookiesMap = new HashMap<>();
-        do {
-            Utility.threadSleep(100);
-            cookies = manager.getCookie(Utility.getBaseUrl());
-            if (cookies == null)
-                return;
+        String cookies = CookieManager.getInstance().getCookie(Utility.getBaseUrl());
+        if (cookies != null) {
+            HashMap<String, String> cookiesMap = new HashMap<>();
             String[] splitCookies = cookies.split("; ");
             for (String splitCookie : splitCookies) {
                 String[] kv = splitCookie.split("=", 2);
-                if (kv.length == 2) {
-                    if (!kv[1].equals(cookiesMap.put(kv[0], kv[1]))) {
-                        LogUtility.d("Processing cookie: " + kv[0] + "=" + kv[1]);
-                        CookieInterceptor.this.manager.applyCookie(kv[0], kv[1]);
-                    }
+                if (kv.length != 2) continue;
+                if (!kv[1].equals(cookiesMap.put(kv[0], kv[1]))) {
+                    LogUtility.d("Processing cookie: " + kv[0] + "=" + kv[1]);
+                    manager.applyCookie(kv[0], kv[1]);
                 }
             }
-        } while (!this.manager.endInterceptor());
-        web.post(() -> web.setVisibility(View.GONE));
-    }
-
-    public void intercept() {
-        while(!manager.endInterceptor()){
-            while (intercepting) {
-                Utility.threadSleep(100);
-            }
-            intercepting = true;
-            synchronized (CookieInterceptor.class) {
-                if (!manager.endInterceptor()) {
-                    interceptInternal();
-                }
-            }
-            intercepting = false;
         }
-        this.manager.onFinish();
+
+        if (!manager.endInterceptor()) {
+            // Kick the UI flow if possible, but do not wait for it.
+            maybeStartCloudflareFlow();
+            throw new IOException("Cloudflare challenge required (missing cookies/token).");
+        }
+        CFTokenView tokenView = GeneralActivity.getLastCFView();
+        if (tokenView != null) tokenView.post(() -> tokenView.setVisibility(View.GONE));
+        manager.onFinish();
     }
 
     public interface Manager {

@@ -24,6 +24,7 @@ import com.maxwai.nclientv3.async.database.export.Manager;
 import com.maxwai.nclientv3.components.activities.GeneralActivity;
 import com.maxwai.nclientv3.components.views.GeneralPreferenceFragment;
 import com.maxwai.nclientv3.settings.Global;
+import com.maxwai.nclientv3.utility.AppExecutors;
 import com.maxwai.nclientv3.utility.LogUtility;
 
 import java.io.BufferedReader;
@@ -38,7 +39,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class SettingsActivity extends GeneralActivity {
     GeneralPreferenceFragment fragment;
@@ -118,19 +118,31 @@ public class SettingsActivity extends GeneralActivity {
             }
         }, selectedFile -> {
             if (selectedFile == null) return;
-            try {
-                Process process = Runtime.getRuntime().exec(new String[]{"logcat", "-d"});
-                try (OutputStream outputStream = getContentResolver().openOutputStream(selectedFile);
-                     Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream));
-                     BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                    String output = in.lines().collect(Collectors.joining("\n"));
-                    writer.write(output);
+            AppExecutors.io().execute(() -> {
+                boolean ok = false;
+                try {
+                    Process process = new ProcessBuilder("logcat", "-d")
+                        .redirectErrorStream(true)
+                        .start();
+                    try (OutputStream outputStream = getContentResolver().openOutputStream(selectedFile);
+                         Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream));
+                         BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                        char[] buffer = new char[8192];
+                        int read;
+                        while ((read = in.read(buffer)) != -1) {
+                            writer.write(buffer, 0, read);
+                        }
+                        writer.flush();
+                    }
+                    ok = process.waitFor() == 0;
+                } catch (Exception e) {
+                    LogUtility.e("Error getting logcat", e);
                 }
-                Toast.makeText(this, getString(process.exitValue() != 0 ? R.string.copy_logs_fail : R.string.export_finished), Toast.LENGTH_SHORT).show();
-            } catch (IOException e) {
-                LogUtility.e("Error getting logcat", e);
-                Toast.makeText(this, getString(R.string.copy_logs_fail), Toast.LENGTH_SHORT).show();
-            }
+                boolean finalOk = ok;
+                runOnUiThread(() ->
+                    Toast.makeText(this, getString(finalOk ? R.string.export_finished : R.string.copy_logs_fail), Toast.LENGTH_SHORT).show()
+                );
+            });
         });
     }
 

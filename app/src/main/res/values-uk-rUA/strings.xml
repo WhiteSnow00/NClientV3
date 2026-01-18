@@ -80,7 +80,7 @@
     <string name="random_manga">Випадкова галерея</string>
     <string name="save_page">Зберегти сторінку</string>
     <string name="page_count_format" formatted="true">%d сторінок</string>
-    <string name="upload_date_format" formatted="true">Завантажено %s о %s</string>
+    <string name="upload_date_format" formatted="true">Завантажено %1$s о %2$s</string>
     <string name="favorite_count_format" formatted="true">%d уподобань</string>
     <string name="favorite_manga">Уподобані галереї</string>
     <string name="setting_on_remove_ignored">Галереї з ігнорованими мітками не будуть показані</string>
@@ -92,7 +92,7 @@
     <string name="no_updates_found">Оновлення не знайдені</string>
     <string name="error_retrieving">Помилка під час отримання останньої версії</string>
     <string name="new_version_found">Знайдена нова версія</string>
-    <string name="update_version_format" formatted="true">Оновити з версії %s до версії %s?\n\nЖурнал змін:\n%s</string>
+    <string name="update_version_format" formatted="true">Оновити з версії %1$s до версії %2$s?\n\nЖурнал змін:\n%3$s</string>
     <string name="clear_this_list">Очистити цей список?</string>
     <string name="set_minimum_count">Встановити мінімальну кількість</string>
     <string name="sort_by_title">Впорядковувати за назвою</string>

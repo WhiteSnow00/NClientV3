@@ -71,8 +71,15 @@ public class CustomInterceptor implements Interceptor {
             CookieManager.getInstance().removeAllCookies(null);
 
             CookieInterceptor interceptor = new CookieInterceptor(MANAGER);
-            interceptor.intercept();
+            try {
+                interceptor.intercept();
+            } catch (IOException e) {
+                // Fail fast: the UI layer can reuse the existing Cloudflare/WebView flow triggered by CookieInterceptor.
+                response.close();
+                throw e;
+            }
             if (context != null) Global.reloadHttpClient(context);
+            response.close();
             response = Global.client.newCall(request.newBuilder().addHeader("rec", "1").build()).execute();
         }
         return response;

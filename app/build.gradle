@@ -2,15 +2,20 @@ apply plugin: 'com.android.application'
 
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
-keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+def hasKeystore = keystorePropertiesFile.exists()
+if (hasKeystore) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
 
 android {
     signingConfigs {
         release {
-            keyAlias = keystoreProperties['keyAlias']
-            keyPassword = keystoreProperties['keyPassword']
-            storeFile = file(keystoreProperties['storeFile'])
-            storePassword = keystoreProperties['storePassword']
+            if (hasKeystore) {
+                keyAlias = keystoreProperties['keyAlias']
+                keyPassword = keystoreProperties['keyPassword']
+                storeFile = file(keystoreProperties['storeFile'])
+                storePassword = keystoreProperties['storePassword']
+            }
         }
     }
     compileSdk = 36
@@ -18,9 +23,9 @@ android {
         applicationId = "com.maxwai.nclientv3"
         // Format: MmPPbb
         // M: Major, m: minor, P: Patch, b: build
-        versionCode = 410500
+        versionCode = 410501
         multiDexEnabled = true
-        versionName = "4.1.5"
+        versionName = "4.1.6"
         vectorDrawables.useSupportLibrary = true
         proguardFiles 'proguard-rules.pro'
     }
@@ -44,7 +49,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
             versionNameSuffix = "-release"
             resValue "string", "app_name", "NClientV3"
-            signingConfig = signingConfigs.release
+            if (hasKeystore) {
+                signingConfig signingConfigs.release
+            }
         }
         debug {
             applicationIdSuffix = ".debug"
@@ -118,6 +125,8 @@ dependencies {
     implementation 'com.github.franmontiel:PersistentCookieJar:v1.0.1'
     // To parse HTML
     implementation 'org.jsoup:jsoup:1.22.1'
+    // Optional runtime dependency for Jsoup's RE2/J regex implementation (required for R8 full mode).
+    implementation 'com.google.re2j:re2j:1.8'
     // color picker
     implementation 'com.github.yukuku:ambilwarna:2.0.1'
     // fast scroll

@@ -103,7 +103,8 @@ public class ZoomActivity extends GeneralActivity {
         mViewPager = findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         mViewPager.setOrientation(preferences.getInt(SCROLL_TYPE_KEY, ScrollType.HORIZONTAL.ordinal()));
-        mViewPager.setOffscreenPageLimit(Global.getOffscreenLimit());
+        // Reader memory safety: keep at most 2 fragments retained by ViewPager2.
+        mViewPager.setOffscreenPageLimit(Math.min(2, Global.getOffscreenLimit()));
         pageSwitcher = findViewById(R.id.page_switcher);
         pageManagerLabel = findViewById(R.id.pages);
         cornerPageViewer = findViewById(R.id.page_text);
@@ -336,8 +337,9 @@ public class ZoomActivity extends GeneralActivity {
 
     private void makeNearRequests(int newPage) {
         ZoomFragment fragment;
-        int offScreenLimit = Global.getOffscreenLimit();
-        for (int i = newPage - offScreenLimit; i <= newPage + offScreenLimit; i++) {
+        // Limit proactive preloading to at most 1 page ahead/behind to reduce retained bitmaps.
+        final int preloadDistance = 1;
+        for (int i = newPage - preloadDistance; i <= newPage + preloadDistance; i++) {
             fragment = getActualFragment(i);
             if (fragment == null) continue;
             if (i == newPage) fragment.loadImage(Priority.IMMEDIATE);
@@ -347,9 +349,9 @@ public class ZoomActivity extends GeneralActivity {
 
     private void clearFarRequests(int oldPage, int newPage) {
         ZoomFragment fragment;
-        int offScreenLimit = Global.getOffscreenLimit();
-        for (int i = oldPage - offScreenLimit; i <= oldPage + offScreenLimit; i++) {
-            if (i >= newPage - offScreenLimit && i <= newPage + offScreenLimit) continue;
+        final int preloadDistance = 1;
+        for (int i = oldPage - preloadDistance; i <= oldPage + preloadDistance; i++) {
+            if (i >= newPage - preloadDistance && i <= newPage + preloadDistance) continue;
             fragment = getActualFragment(i);
             if (fragment == null) continue;
             fragment.cancelRequest();
@@ -368,7 +370,7 @@ public class ZoomActivity extends GeneralActivity {
 
     private void downloadPage() {
         final File output = new File(Global.SCREENFOLDER, gallery.getId() + "-" + (mViewPager.getCurrentItem() + 1) + ".jpg");
-        Utility.saveImage(getActualFragment().getDrawable(), output);
+        Utility.saveImageAsync(this, getActualFragment().getDrawable(), output);
     }
 
     private void animateLayout() {

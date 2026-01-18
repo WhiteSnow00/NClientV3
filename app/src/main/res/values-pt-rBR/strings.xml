@@ -80,7 +80,7 @@
     <string name="random_manga">Galeria aleatória</string>
     <string name="save_page">Salvar página</string>
     <string name="page_count_format" formatted="true">%d páginas</string>
-    <string name="upload_date_format" formatted="true">Enviado em %s as %s</string>
+    <string name="upload_date_format" formatted="true">Enviado em %1$s as %2$s</string>
     <string name="favorite_count_format" formatted="true">%d favoritos</string>
     <string name="favorite_manga">Galerias favoritas</string>
     <string name="setting_on_remove_ignored">As galerias com tags ignoradas não serão exibidas</string>
@@ -92,7 +92,7 @@
     <string name="no_updates_found">Nenhuma atualização encontrada</string>
     <string name="error_retrieving">Erro ao procurar versão mais recente</string>
     <string name="new_version_found">Nova versão encontrada</string>
-    <string name="update_version_format" formatted="true">Atualizar da versão %s para a versão %s?\n\nNotas de atualização:\n%s</string>
+    <string name="update_version_format" formatted="true">Atualizar da versão %1$s para a versão %2$s?\n\nNotas de atualização:\n%3$s</string>
     <string name="clear_this_list">Limpar essa lista?</string>
     <string name="set_minimum_count">Definir contagem mínima</string>
     <string name="sort_by_title">Classificar por título</string>

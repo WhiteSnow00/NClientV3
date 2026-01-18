@@ -19,6 +19,7 @@ import com.maxwai.nclientv3.GalleryActivity;
 import com.maxwai.nclientv3.R;
 import com.maxwai.nclientv3.api.components.Gallery;
 import com.maxwai.nclientv3.async.database.Queries;
+import com.maxwai.nclientv3.components.status.StatusManager;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
 import com.maxwai.nclientv3.utility.LogUtility;
@@ -64,6 +65,14 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
         if (galleries[position] != null) return galleries[position];
         cursor.moveToPosition(position);
         try {
+            int defaultColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
+            int colorIndex = cursor.getColumnIndex("color");
+            int statusColor = colorIndex >= 0 ? cursor.getInt(colorIndex) : 0;
+            int idIndex = cursor.getColumnIndex(Queries.GalleryTable.IDGALLERY);
+            int id = idIndex >= 0 ? cursor.getInt(idIndex) : -1;
+            if (id >= 0 && statuses.indexOfKey(id) < 0) {
+                statuses.put(id, statusColor == 0 ? defaultColor : statusColor);
+            }
             Gallery g = Queries.GalleryTable.cursorToGallery(cursor);
             galleries[position] = g;
             return g;
@@ -99,10 +108,7 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
             return true;
         });
         int statusColor = statuses.get(ent.getId(), 0);
-        if (statusColor == 0) {
-            statusColor = Queries.StatusMangaTable.getStatus(ent.getId()).color;
-            statuses.put(ent.getId(), statusColor);
-        }
+        if (statusColor == 0) statusColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
         holder.title.setBackgroundColor(statusColor);
     }
 

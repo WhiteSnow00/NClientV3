@@ -7,4 +7,9 @@
     <include
         domain="sharedpref"
         path="." />
+
+    <!-- Contains persisted session cookies / auth state (PersistentCookieJar via SharedPrefsCookiePersistor). -->
+    <exclude
+        domain="sharedpref"
+        path="Login.xml" />
 </full-backup-content>

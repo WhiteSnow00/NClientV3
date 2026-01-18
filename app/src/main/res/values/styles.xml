@@ -5,13 +5,21 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryVariant">@color/primaryColorVariant</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <!-- Prevent device "force dark" / "darken apps" from overriding our Material palette (can cause low contrast on Android 15 devices). -->
+        <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
+        <!-- Ensure dialogs consistently use Material theming (button contrast, surface/onSurface). -->
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.MaterialComponents.MaterialAlertDialog</item>
         <item name="android:windowSplashScreenBackground" tools:targetApi="31">#1F1F1F</item>
         <item name="navHeaderGradient">@drawable/side_nav_bar</item>
     </style>
 
 
     <style name="AppTheme.Black" parent="AppTheme">
+        <!-- True black background while keeping readable contrast regardless of system night mode. -->
         <item name="colorSurface">#000000</item>
+        <item name="colorOnSurface">@android:color/white</item>
+        <item name="colorOnBackground">@android:color/white</item>
+        <item name="colorOnPrimary">@android:color/white</item>
         <item name="android:windowBackground">#000000</item>
         <item name="android:colorBackground">#000000</item>
         <item name="elevationOverlayEnabled">false</item>

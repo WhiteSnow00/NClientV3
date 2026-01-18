@@ -5,6 +5,10 @@ import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.work.BackoffPolicy;
+import androidx.work.Constraints;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
@@ -15,21 +19,25 @@ import com.maxwai.nclientv3.api.SimpleGallery;
 import com.maxwai.nclientv3.api.components.Gallery;
 import com.maxwai.nclientv3.api.components.GenericGallery;
 import com.maxwai.nclientv3.async.database.Queries;
+import com.maxwai.nclientv3.settings.NotificationSettings;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class DownloadGalleryV2 extends Worker {
     private static final ReentrantLock lock = new ReentrantLock();
+    private static final String UNIQUE_WORK_NAME = "DownloadGalleryV2";
 
     public DownloadGalleryV2(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
     }
 
     public static void downloadGallery(Context context, GenericGallery gallery) {
+        NotificationSettings.requestPostNotificationsIfNeeded(context);
         if (gallery.isValid() && gallery instanceof Gallery)
             downloadGallery(context, (Gallery) gallery);
         if (gallery.getId() > 0) {
@@ -75,8 +83,14 @@ public class DownloadGalleryV2 extends Worker {
 
     public static void startWork(@Nullable Context context) {
         if (context != null) {
-            WorkRequest DownloadGalleryWorkRequest = new OneTimeWorkRequest.Builder(DownloadGalleryV2.class).build();
-            WorkManager.getInstance(context).enqueue(DownloadGalleryWorkRequest);
+            Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+            OneTimeWorkRequest downloadGalleryWorkRequest = new OneTimeWorkRequest.Builder(DownloadGalleryV2.class)
+                .setConstraints(constraints)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .build();
+            WorkManager.getInstance(context).enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, downloadGalleryWorkRequest);
         }
     }
 
@@ -87,6 +101,11 @@ public class DownloadGalleryV2 extends Worker {
         try {
             obtainData();
             GalleryDownloaderManager entry = DownloadQueue.fetch();
+            if (entry == null) {
+                reloadQueueFromDatabase();
+                obtainData();
+                entry = DownloadQueue.fetch();
+            }
             if (entry != null) {
                 LogUtility.d("Downloading: " + entry.downloader().getId());
                 if (entry.downloader().downloadGalleryData()) {
@@ -97,6 +116,18 @@ public class DownloadGalleryV2 extends Worker {
             lock.unlock();
         }
         return Result.success();
+    }
+
+    private void reloadQueueFromDatabase() {
+        try {
+            List<GalleryDownloaderManager> entries = Queries.DownloadTable.getAllDownloads(getApplicationContext());
+            for (GalleryDownloaderManager gg : entries) {
+                gg.downloader().setStatus(GalleryDownloaderV2.Status.PAUSED);
+                DownloadQueue.add(gg);
+            }
+        } catch (IOException e) {
+            LogUtility.w("Failed to reload download queue", e);
+        }
     }
 
     private void obtainData() {

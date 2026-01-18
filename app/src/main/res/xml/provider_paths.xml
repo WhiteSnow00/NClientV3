@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
+    <!-- Legacy external storage (pre-Android 11). Limit sharing to the app's top-level folder. -->
     <external-path
-        name="external"
-        path="." />
+        name="external_nclientv3"
+        path="NClientV3/" />
     <external-files-path
         name="external_files"
         path="." />
@@ -18,24 +19,5 @@
     <external-media-path
         name="external_media"
         path="." />
-
-    <external-path
-        name="external_root"
-        path="/" />
-    <external-files-path
-        name="external_files_root"
-        path="/" />
-    <cache-path
-        name="cache_root"
-        path="/" />
-    <external-cache-path
-        name="external_cache_root"
-        path="/" />
-    <files-path
-        name="files_root"
-        path="/" />
-    <external-media-path
-        name="external_media_root"
-        path="/" />
 </paths>
 

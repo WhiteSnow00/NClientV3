@@ -20,6 +20,7 @@ import com.maxwai.nclientv3.api.components.GenericGallery;
 import com.maxwai.nclientv3.api.enums.Language;
 import com.maxwai.nclientv3.async.database.Queries;
 import com.maxwai.nclientv3.components.activities.BaseActivity;
+import com.maxwai.nclientv3.components.status.StatusManager;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.TagV2;
 import com.maxwai.nclientv3.utility.ImageDownloadUtility;
@@ -120,25 +121,25 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
             return true;
         });
         int statusColor = statuses.get(ent.getId(), 0);
-        if (statusColor == 0) {
-            statusColor = Queries.StatusMangaTable.getStatus(ent.getId()).color;
-            statuses.put(ent.getId(), statusColor);
-        }
+        if (statusColor == 0) statusColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
         holder.title.setBackgroundColor(statusColor);
     }
 
     public void updateColor(int id) {
         if (id < 0) return;
-        int position = -1;
-        statuses.put(id, Queries.StatusMangaTable.getStatus(id).color);
-        for (int i = 0; i < mDataset.size(); i++) {
-            SimpleGallery gallery= mDataset.get(i);
-            if (gallery != null && gallery.getId() == id) {
-                position = id;
-                break;
+        new Thread(() -> {
+            int position = -1;
+            statuses.put(id, Queries.StatusMangaTable.getStatus(id).color);
+            for (int i = 0; i < mDataset.size(); i++) {
+                SimpleGallery gallery = mDataset.get(i);
+                if (gallery != null && gallery.getId() == id) {
+                    position = i;
+                    break;
+                }
             }
-        }
-        if (position >= 0) notifyItemChanged(position);
+            int finalPosition = position;
+            if (finalPosition >= 0) context.runOnUiThread(() -> notifyItemChanged(finalPosition));
+        }).start();
     }
 
     private void downloadGallery(final SimpleGallery ent) {
@@ -190,6 +191,7 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
 
             LogUtility.d("Simple: " + g);
         }
+        prefetchStatusColors(galleries);
         LogUtility.d(String.format(Locale.US, "%s,old:%d,new:%d,len%d", this, c, mDataset.size(), galleries.size()));
         context.runOnUiThread(() -> notifyItemRangeInserted(c, galleries.size()));
     }
@@ -203,12 +205,35 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
         mDataset.addAll(galleries);
         context.runOnUiThread(()->notifyItemRangeInserted(0,galleries.size()));*/
         mDataset.clear();
+        statuses.clear();
         for (GenericGallery g : galleries)
             if (g instanceof SimpleGallery)
                 mDataset.add((SimpleGallery) g);
+        prefetchStatusColors(galleries);
         context.runOnUiThread(this::notifyDataSetChanged);
     }
 
+    private void prefetchStatusColors(@NonNull List<GenericGallery> galleries) {
+        if (galleries.isEmpty()) return;
+        int[] ids = new int[galleries.size()];
+        int count = 0;
+        for (GenericGallery g : galleries) {
+            if (g == null) continue;
+            int id = g.getId();
+            if (id <= 0) continue;
+            if (statuses.indexOfKey(id) >= 0) continue;
+            ids[count++] = id;
+        }
+        if (count == 0) return;
+        int[] queryIds = new int[count];
+        System.arraycopy(ids, 0, queryIds, 0, count);
+        SparseIntArray loaded = Queries.StatusMangaTable.getStatusColors(queryIds);
+        int defaultColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
+        for (int i = 0; i < count; i++) {
+            int id = queryIds[i];
+            statuses.put(id, loaded.get(id, defaultColor));
+        }
+    }
 
     public void resetStatuses() {
         statuses.clear();
