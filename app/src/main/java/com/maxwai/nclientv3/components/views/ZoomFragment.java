@@ -41,6 +41,8 @@ import com.maxwai.nclientv3.github.chrisbanes.photoview.PhotoView;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.LogUtility;
 
+import java.io.File;
+
 public class ZoomFragment extends Fragment {
 
     public interface OnZoomChangeListener {
@@ -271,6 +273,11 @@ public class ZoomFragment extends Fragment {
 
     public Drawable getDrawable() {
         return photoView.getDrawable();
+    }
+
+    @Nullable
+    public File getPageFile() {
+        return pageFile;
     }
 
     public void cancelRequest() {

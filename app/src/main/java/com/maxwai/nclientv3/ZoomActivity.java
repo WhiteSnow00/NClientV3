@@ -291,9 +291,11 @@ public class ZoomActivity extends GeneralActivity {
         if (id == R.id.rotate) {
             getActualFragment().rotate();
         } else if (id == R.id.save_page) {
-            if (Global.hasStoragePermission(this)) {
+            if (Utility.isSingleImageSaveLocationSafCustom(this) || Global.hasStoragePermission(this)) {
                 downloadPage();
-            } else requestStorage();
+            } else {
+                requestStorage();
+            }
         } else if (id == R.id.share) {
             if (gallery.getId() <= 0) sendImage(false);
             else openSendImageDialog();
@@ -369,8 +371,20 @@ public class ZoomActivity extends GeneralActivity {
     }
 
     private void downloadPage() {
-        final File output = new File(Global.SCREENFOLDER, gallery.getId() + "-" + (mViewPager.getCurrentItem() + 1) + ".jpg");
-        Utility.saveImageAsync(this, getActualFragment().getDrawable(), output);
+        ZoomFragment fragment = getActualFragment();
+        if (fragment == null) {
+            Toast.makeText(this, getString(R.string.save_images_failed_to_save, getString(R.string.failed)), Toast.LENGTH_SHORT).show();
+            return;
+        }
+        int pageNumber = mViewPager.getCurrentItem() + 1;
+        Utility.saveSingleImageAsync(
+            this,
+            fragment.getDrawable(),
+            fragment.getPageFile(),
+            gallery == null ? 0 : gallery.getId(),
+            pageNumber,
+            (success, message) -> Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        );
     }
 
     private void animateLayout() {

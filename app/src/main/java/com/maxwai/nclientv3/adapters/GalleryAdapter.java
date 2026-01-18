@@ -275,7 +275,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
         adapter.add(context.getString(R.string.share));
         adapter.add(context.getString(R.string.rotate_image));
         adapter.add(context.getString(R.string.bookmark_here));
-        if (Global.hasStoragePermission(context))
+        if (Global.hasStoragePermission(context) || Utility.isSingleImageSaveLocationSafCustom(context))
             adapter.add(context.getString(R.string.save_page));
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context);
         builder.setTitle(R.string.settings).setIcon(R.drawable.ic_share);
@@ -291,8 +291,15 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
                     Queries.ResumeTable.insert(gallery.getId(), pos);
                     break;
                 case 3:
-                    String name = String.format(Locale.US, "%d-%d.jpg", gallery.getId(), pos);
-                    Utility.saveImageAsync(context, imgView.getDrawable(), new File(Global.SCREENFOLDER, name));
+                    File sourceFile = directory == null ? null : directory.getPage(pos);
+                    Utility.saveSingleImageAsync(
+                        context,
+                        imgView.getDrawable(),
+                        sourceFile,
+                        gallery.getId(),
+                        pos,
+                        (success, message) -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    );
                     break;
             }
         }).show();

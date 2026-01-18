@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,6 +20,9 @@ import android.view.View;
 import android.webkit.CookieManager;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.AppCompatAutoCompleteTextView;
 import androidx.biometric.BiometricManager;
@@ -59,6 +63,8 @@ import java.util.Objects;
 
 public class GeneralPreferenceFragment extends PreferenceFragmentCompat {
     private SettingsActivity act;
+    private ActivityResultLauncher<Uri> pickSingleImageSaveFolderLauncher;
+    private Preference singleImageSaveLocationPreference;
 
     public void setAct(SettingsActivity act) {
         this.act = act;
@@ -94,6 +100,64 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat {
         wifi.setTitle(getDataUsageString(wifi.getValue()));
         mobile.setUpdatesContinuously(true);
         wifi.setUpdatesContinuously(true);
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        pickSingleImageSaveFolderLauncher = registerForActivityResult(
+            new ActivityResultContracts.OpenDocumentTree(),
+            uri -> {
+                if (uri == null) {
+                    updateSingleImageSaveLocationSummary();
+                    return;
+                }
+                try {
+                    requireContext().getContentResolver().takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    );
+                } catch (SecurityException e) {
+                    LogUtility.w("Unable to persist folder permission", e);
+                    if (act != null) {
+                        Toast.makeText(act, R.string.failed, Toast.LENGTH_SHORT).show();
+                    }
+                    updateSingleImageSaveLocationSummary();
+                    return;
+                }
+
+                String folderName = resolveTreeDisplayName(uri);
+                SharedPreferences preferences = requireContext().getSharedPreferences("Settings", Context.MODE_PRIVATE);
+                preferences.edit()
+                    .putString(getString(R.string.preference_key_single_image_save_location), Utility.SINGLE_IMAGE_SAVE_LOCATION_SAF_CUSTOM)
+                    .putString(getString(R.string.preference_key_single_image_save_tree_uri), uri.toString())
+                    .putString(getString(R.string.preference_key_single_image_save_tree_name), folderName)
+                    .apply();
+                updateSingleImageSaveLocationSummary();
+            }
+        );
+    }
+
+    private String resolveTreeDisplayName(@NonNull Uri treeUri) {
+        try {
+            String treeDocumentId = android.provider.DocumentsContract.getTreeDocumentId(treeUri);
+            Uri documentUri = android.provider.DocumentsContract.buildDocumentUriUsingTree(treeUri, treeDocumentId);
+            try (Cursor cursor = requireContext().getContentResolver().query(
+                documentUri,
+                new String[]{android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME},
+                null,
+                null,
+                null
+            )) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    String name = cursor.getString(0);
+                    if (name != null && !name.trim().isEmpty()) return name.trim();
+                }
+            }
+        } catch (Throwable t) {
+            LogUtility.w("Unable to resolve folder display name", t);
+        }
+        return getString(R.string.save_images_location_custom_folder);
     }
 
     private int getDataUsageString(int val) {
@@ -317,6 +381,14 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat {
             });
         }
         {
+            singleImageSaveLocationPreference = Objects.requireNonNull(findPreference(getString(R.string.preference_key_single_image_save_location)));
+            updateSingleImageSaveLocationSummary();
+            singleImageSaveLocationPreference.setOnPreferenceClickListener(preference -> {
+                openSingleImageSaveLocationDialog();
+                return true;
+            });
+        }
+        {
             //clear cache if pressed
             double cacheSize = Global.recursiveSize(act.getCacheDir()) / ((double) (1 << 20));
             Preference cache = Objects.requireNonNull(findPreference(getString(R.string.preference_key_cache)));
@@ -424,6 +496,81 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat {
             act.getSharedPreferences("Settings", Context.MODE_PRIVATE).edit().putString(key, edit.getText().toString()).apply();
             savePathPreference.setSummary(edit.getText().toString());
         }).setNegativeButton(R.string.cancel, null).show();
+    }
+
+    private void openSingleImageSaveLocationDialog() {
+        if (act == null) return;
+        SharedPreferences preferences = act.getSharedPreferences("Settings", Context.MODE_PRIVATE);
+        String current = preferences.getString(
+            getString(R.string.preference_key_single_image_save_location),
+            Utility.SINGLE_IMAGE_SAVE_LOCATION_DOWNLOADS
+        );
+        if (current == null) current = Utility.SINGLE_IMAGE_SAVE_LOCATION_DOWNLOADS;
+
+        String[] items = new String[]{
+            getString(R.string.save_images_location_downloads),
+            getString(R.string.save_images_location_app_storage),
+            getString(R.string.save_images_location_custom_folder)
+        };
+        final String[] values = new String[]{
+            Utility.SINGLE_IMAGE_SAVE_LOCATION_DOWNLOADS,
+            Utility.SINGLE_IMAGE_SAVE_LOCATION_APP_PRIVATE,
+            Utility.SINGLE_IMAGE_SAVE_LOCATION_SAF_CUSTOM
+        };
+
+        int checked = 0;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equals(current)) {
+                checked = i;
+                break;
+            }
+        }
+        final int[] selected = new int[]{checked};
+
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(act);
+        builder.setTitle(R.string.title_save_images_location);
+        builder.setSingleChoiceItems(items, checked, (dialog, which) -> selected[0] = which);
+        builder.setPositiveButton(R.string.ok, (dialog, which) -> {
+            String choice = values[selected[0]];
+            if (Utility.SINGLE_IMAGE_SAVE_LOCATION_SAF_CUSTOM.equals(choice)) {
+                pickSingleImageSaveFolderLauncher.launch(null);
+                return;
+            }
+            preferences.edit()
+                .putString(getString(R.string.preference_key_single_image_save_location), choice)
+                .apply();
+            updateSingleImageSaveLocationSummary();
+        });
+        builder.setNegativeButton(R.string.cancel, null);
+        builder.show();
+    }
+
+    private void updateSingleImageSaveLocationSummary() {
+        if (singleImageSaveLocationPreference == null) return;
+        SharedPreferences preferences = requireContext().getSharedPreferences("Settings", Context.MODE_PRIVATE);
+        String location = preferences.getString(
+            getString(R.string.preference_key_single_image_save_location),
+            Utility.SINGLE_IMAGE_SAVE_LOCATION_DOWNLOADS
+        );
+        if (location == null) location = Utility.SINGLE_IMAGE_SAVE_LOCATION_DOWNLOADS;
+
+        switch (location) {
+            case Utility.SINGLE_IMAGE_SAVE_LOCATION_APP_PRIVATE:
+                singleImageSaveLocationPreference.setSummary(R.string.save_images_location_app_storage);
+                break;
+            case Utility.SINGLE_IMAGE_SAVE_LOCATION_SAF_CUSTOM: {
+                String name = preferences.getString(getString(R.string.preference_key_single_image_save_tree_name), null);
+                if (name == null || name.trim().isEmpty()) {
+                    singleImageSaveLocationPreference.setSummary(R.string.save_images_location_custom_folder);
+                } else {
+                    singleImageSaveLocationPreference.setSummary(name);
+                }
+                break;
+            }
+            default:
+                singleImageSaveLocationPreference.setSummary(R.string.save_images_location_downloads);
+                break;
+        }
     }
 
     private void changeLauncher(PackageManager pm, ComponentName name, boolean enabled) {

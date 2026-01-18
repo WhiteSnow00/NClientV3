@@ -4,6 +4,9 @@
     <string name="preference_key_offscreen_limit" translatable="false">offscreen_limit</string>
     <string name="preference_key_enable_beta" translatable="false">enable_beta</string>
     <string name="preference_key_save_path" translatable="false">save_path</string>
+    <string name="preference_key_single_image_save_location" translatable="false">single_image_save_location</string>
+    <string name="preference_key_single_image_save_tree_uri" translatable="false">single_image_save_tree_uri</string>
+    <string name="preference_key_single_image_save_tree_name" translatable="false">single_image_save_tree_name</string>
     <string name="preference_key_fake_icon" translatable="false">fake_icon</string>
     <string name="preference_key_user_agent" translatable="false">setting_user_agent</string>
     <string name="preference_key_title_type" translatable="false">title_type_str</string>
@@ -283,6 +286,13 @@
     <string name="no_entry_found">No entries found</string>
     <string name="retry">Retry</string>
     <string name="folder_location">Folder location</string>
+    <string name="title_save_images_location">Save images location</string>
+    <string name="save_images_location_downloads">Downloads/NClientV3</string>
+    <string name="save_images_location_app_storage">App storage</string>
+    <string name="save_images_location_custom_folder">Custom folder…</string>
+    <string name="save_images_saved_to" formatted="true">Saved to %1$s</string>
+    <string name="save_images_failed_to_save" formatted="true">Save failed: %1$s</string>
+    <string name="save_images_custom_folder_not_set">Custom folder not set. Choose a folder in Settings.</string>
     <string name="default_zoom">Default zoom</string>
     <string name="choose_directory">Choose directory</string>
     <string name="bookmark_here">Bookmark here</string>
