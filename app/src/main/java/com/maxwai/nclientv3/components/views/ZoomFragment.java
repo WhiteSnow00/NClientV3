@@ -51,7 +51,6 @@ public class ZoomFragment extends Fragment {
 
     private static final float MAX_SCALE = 8f;
     private static final float CHANGE_PAGE_THRESHOLD = .2f;
-    // Cap decoded pixel count per page to avoid OOMs when users zoom; 8MP ~= 32MB in ARGB_8888.
     private static final long MAX_DECODE_PIXELS = 8_000_000L;
     private PhotoView photoView = null;
     private ImageButton retryButton;
@@ -79,7 +78,6 @@ public class ZoomFragment extends Fragment {
         args.putString("URL", gallery.isLocal() ? null : ((Gallery) gallery).getPageUrl(page).toString());
         args.putParcelable("FOLDER", directory == null ? null : directory.getPage(page + 1));
         try {
-            // Preserve zoom behavior when downsampling: use original page dimensions for scale decisions.
             args.putInt("PAGE_W", gallery.getGalleryData().getPage(page).getSize().getWidth());
             args.putInt("PAGE_H", gallery.getGalleryData().getPage(page).getSize().getHeight());
         } catch (Exception ignore) {
@@ -117,10 +115,8 @@ public class ZoomFragment extends Fragment {
         ZoomActivity activity = (ZoomActivity) getActivity();
         assert getArguments() != null;
         assert activity != null;
-        //find views
         photoView = rootView.findViewById(R.id.image);
         retryButton = rootView.findViewById(R.id.imageView);
-        //read arguments
         String str = getArguments().getString("URL");
         url = str == null ? null : Uri.parse(str);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -211,8 +207,10 @@ public class ZoomFragment extends Fragment {
 
     public void loadImage(Priority priority) {
         if (photoView == null) return;
-        int qualityLevel = requestedQualityLevel > 0 ? requestedQualityLevel : qualityLevelForScale(estimateInitialScale());
-        int[] decodeSize = computeDecodeSizePx(qualityScaleForLevel(qualityLevel));
+        float scaleHint = photoView.getDrawable() != null ? photoView.getScale() : estimateInitialScale();
+        scaleHint = clampDecodeScale(scaleHint);
+        int qualityLevel = requestedQualityLevel > 0 ? requestedQualityLevel : qualityLevelForScale(scaleHint);
+        int[] decodeSize = computeDecodeSizePx(scaleHint, oversampleForLevel(qualityLevel));
         if (completedDownload
             && lastRequestedDegree == degree
             && lastRequestedW == decodeSize[0]
@@ -284,7 +282,6 @@ public class ZoomFragment extends Fragment {
         if (photoView != null && target != null) {
             RequestManager manager = GlideX.with(photoView);
             if (manager != null) manager.clear(target);
-            // Allow re-requesting if the page becomes visible again; also releases decoded bitmaps for far pages.
             completedDownload = false;
         }
     }
@@ -316,19 +313,17 @@ public class ZoomFragment extends Fragment {
     }
 
     private void maybeUpgradeDecodeForZoom(float currentScale) {
-        // Only upgrade on a "significant" zoom to avoid repeated reloads while pinching.
-        int desiredLevel = qualityLevelForScale(currentScale);
+        float scaleHint = clampDecodeScale(currentScale);
+        int desiredLevel = qualityLevelForScale(scaleHint);
         if (desiredLevel <= lastQualityLevel) return;
         if (!isAdded() || photoView == null) return;
-        // Avoid doing Glide work off the main thread.
         if (!Looper.getMainLooper().isCurrentThread()) return;
-        int[] decodeSize = computeDecodeSizePx(qualityScaleForLevel(desiredLevel));
+        int[] decodeSize = computeDecodeSizePx(scaleHint, oversampleForLevel(desiredLevel));
         if (decodeSize[0] == lastRequestedW && decodeSize[1] == lastRequestedH && lastRequestedDegree == degree) {
             lastQualityLevel = desiredLevel;
             return;
         }
         requestedQualityLevel = desiredLevel;
-        // Force a reload with a larger decode target; only 1 bitmap is retained per fragment.
         loadImage(Priority.IMMEDIATE);
     }
 
@@ -338,36 +333,53 @@ public class ZoomFragment extends Fragment {
         return 1;
     }
 
-    private static float qualityScaleForLevel(int level) {
+    private static float oversampleForLevel(int level) {
         switch (level) {
             case 3:
-                return 2.5f;
+                return 1.15f;
             case 2:
-                return 1.75f;
+                return 1.10f;
             default:
-                return 1.0f;
+                return 1.15f;
         }
     }
 
-    private int[] computeDecodeSizePx(float qualityScale) {
+    private static float clampDecodeScale(float scale) {
+        if (Float.isNaN(scale) || Float.isInfinite(scale)) return 1f;
+        return Math.max(1f, Math.min(3f, scale));
+    }
+
+    private int[] computeDecodeSizePx(float scaleHint, float oversample) {
         FragmentActivity activity = getActivity();
         int viewportW = photoView != null ? photoView.getWidth() : 0;
         int viewportH = photoView != null ? photoView.getHeight() : 0;
         if (viewportW <= 0) viewportW = Global.getDeviceWidth(activity);
         if (viewportH <= 0) viewportH = Global.getDeviceHeight(activity);
 
+        float decodeScale = clampDecodeScale(scaleHint) * Math.max(1f, oversample);
+        boolean swapForRotation = degree == 90 || degree == 270;
+
+        int effectiveOriginalW = originalW;
+        int effectiveOriginalH = originalH;
+        if (swapForRotation) {
+            int tmp = effectiveOriginalW;
+            effectiveOriginalW = effectiveOriginalH;
+            effectiveOriginalH = tmp;
+        }
+
         int targetW;
         int targetH;
-        if (originalW > 0 && originalH > 0) {
-            float fitScale = Math.min((viewportW * qualityScale) / (float) originalW, (viewportH * qualityScale) / (float) originalH);
-            fitScale = Math.max(0.01f, fitScale);
-            targetW = Math.max(1, (int) Math.ceil(originalW * fitScale));
-            targetH = Math.max(1, (int) Math.ceil(originalH * fitScale));
-            targetW = Math.min(targetW, originalW);
-            targetH = Math.min(targetH, originalH);
+        if (effectiveOriginalW > 0 && effectiveOriginalH > 0) {
+            float baseFitScale = Math.min(viewportW / (float) effectiveOriginalW, viewportH / (float) effectiveOriginalH);
+            baseFitScale = Math.max(0.01f, baseFitScale);
+            float desiredScale = baseFitScale * decodeScale;
+            targetW = Math.max(1, (int) Math.ceil(effectiveOriginalW * desiredScale));
+            targetH = Math.max(1, (int) Math.ceil(effectiveOriginalH * desiredScale));
+            targetW = Math.min(targetW, effectiveOriginalW);
+            targetH = Math.min(targetH, effectiveOriginalH);
         } else {
-            targetW = Math.max(1, Math.round(viewportW * qualityScale));
-            targetH = Math.max(1, Math.round(viewportH * qualityScale));
+            targetW = Math.max(1, Math.round(viewportW * decodeScale));
+            targetH = Math.max(1, Math.round(viewportH * decodeScale));
         }
 
         long pixels = (long) targetW * (long) targetH;

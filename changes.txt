@@ -1,0 +1,2785 @@
+diff --git a/.github/ISSUE_TEMPLATE/bug_report.yaml b/.github/ISSUE_TEMPLATE/bug_report.yaml
+deleted file mode 100644
+index 9bcbc0b..0000000
+--- a/.github/ISSUE_TEMPLATE/bug_report.yaml
++++ /dev/null
+@@ -1,64 +0,0 @@
+-name: Bug Report
+-description: Create a report to help us improve
+-labels: [ "bug" ]
+-body:
+-  - type: checkboxes
+-    attributes:
+-      label: Checklist
+-      description: Please confirm that you have done following steps.
+-      options:
+-        - label: I have looked at the common issues and ways to fix them in the [wiki](https://github.com/maxwai/NClientV3/wiki)
+-          required: true
+-        - label: I have searched the existing issues for the same bug
+-          required: true
+-        - label: I have attached the log file as an attachment to this issue
+-          required: true
+-  - type: textarea
+-    attributes:
+-      label: Describe the bug
+-      description: A clear and concise description of what the bug is.
+-    validations:
+-      required: true
+-  - type: textarea
+-    attributes:
+-      label: Steps To Reproduce
+-      description: Steps to reproduce the behavior.
+-      placeholder: |
+-        1. Go to '...'
+-        2. Click on '....'
+-        3. Scroll down to '....'
+-        4. See error
+-    validations:
+-      required: true
+-  - type: textarea
+-    attributes:
+-      label: Expected behavior
+-      description: A clear and concise description of what you expected to happen.
+-    validations:
+-      required: true
+-  - type: textarea
+-    attributes:
+-      label: Screenshots
+-      description: If applicable, add screenshots to help explain your problem.
+-    validations:
+-      required: false
+-  - type: input
+-    attributes:
+-      label: Android Version
+-      description: Android Version of the phone where the App is installed
+-      placeholder: "14"
+-    validations:
+-      required: true
+-  - type: input
+-    attributes:
+-      label: App Version
+-      description: App Version where the bug happens
+-      placeholder: "4.0.9"
+-    validations:
+-      required: true
+-  - type: textarea
+-    attributes:
+-      label: Additional context
+-      description: Add any other context about the problem here.
+-    validations:
+-      required: false
+diff --git a/.github/ISSUE_TEMPLATE/config.yml b/.github/ISSUE_TEMPLATE/config.yml
+deleted file mode 100644
+index 3ba13e0..0000000
+--- a/.github/ISSUE_TEMPLATE/config.yml
++++ /dev/null
+@@ -1 +0,0 @@
+-blank_issues_enabled: false
+diff --git a/.github/ISSUE_TEMPLATE/feature_request.yaml b/.github/ISSUE_TEMPLATE/feature_request.yaml
+deleted file mode 100644
+index 6868dce..0000000
+--- a/.github/ISSUE_TEMPLATE/feature_request.yaml
++++ /dev/null
+@@ -1,35 +0,0 @@
+-name: Feature request
+-description: Suggest an idea for this project
+-labels: [ "enhancement" ]
+-body:
+-  - type: checkboxes
+-    attributes:
+-      label: Checklist
+-      description: Please confirm that you have done following steps.
+-      options:
+-        - label: I have searched the existing issues for the same feature
+-          required: true
+-  - type: textarea
+-    attributes:
+-      label: Is your feature request related to a problem? Please describe
+-      description: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+-    validations:
+-      required: false
+-  - type: textarea
+-    attributes:
+-      label: Describe the solution you'd like
+-      description: A clear and concise description of what you want to happen.
+-    validations:
+-      required: false
+-  - type: textarea
+-    attributes:
+-      label: Describe alternatives you've considered
+-      description: A clear and concise description of any alternative solutions or features you've considered.
+-    validations:
+-      required: false
+-  - type: textarea
+-    attributes:
+-      label: Additional context
+-      description: Add any other context about the problem here.
+-    validations:
+-      required: false
+diff --git a/.github/PULL_REQUEST_TEMPLATE.md b/.github/PULL_REQUEST_TEMPLATE.md
+deleted file mode 100644
+index 2f148c0..0000000
+--- a/.github/PULL_REQUEST_TEMPLATE.md
++++ /dev/null
+@@ -1,40 +0,0 @@
+-A similar PR may already be submitted!
+-Please search among the [Pull request](../) before creating one.
+-
+-Thanks for submitting a pull request! Please provide enough information so that others can review your pull request:
+-
+-For more information, see the `CONTRIBUTING` guide.
+-
+-
+-**Summary**
+-
+-<!-- Summary of the PR -->
+-
+-This PR fixes/implements the following **bugs/features**
+-
+-* [ ] Bug 1
+-* [ ] Bug 2
+-* [ ] Feature 1
+-* [ ] Feature 2
+-* [ ] Breaking changes
+-
+-<!-- You can skip this if you're fixing a typo or adding an app to the Showcase. -->
+-
+-Explain the **motivation** for making this change. What existing problem does the pull request solve?
+-
+-<!-- Example: When "Adding a function to do X", explain why it is necessary to have a way to do X. -->
+-
+-**Test plan (required)**
+-
+-Demonstrate the code is solid. Example: The exact commands you ran and their output, screenshots / videos if the pull request changes UI.
+-
+-<!-- Make sure tests pass on both Travis and Circle CI. -->
+-
+-**Code formatting**
+-
+-<!-- See the simple style guide. -->
+-
+-**Closing issues**
+-
+-<!-- Put `closes #XXXX` in your comment to auto-close the issue that your PR fixes (if such). -->
+-Fixes #
+diff --git a/.github/dependabot.yml b/.github/dependabot.yml
+deleted file mode 100644
+index 0118da6..0000000
+--- a/.github/dependabot.yml
++++ /dev/null
+@@ -1,25 +0,0 @@
+-version: 2
+-updates:
+-    # Enable version updates for Gradle
+-    -   package-ecosystem: "gradle"
+-        # Look for a `build.gradle` in the `root` directory
+-        directory: "/"
+-        # Check for updates once a week
+-        schedule:
+-            interval: "weekly"
+-
+-    # Enable version updates for npm
+-    -   package-ecosystem: "pip"
+-        # Look for `package.json` and `lock` files in the `root` directory
+-        directory: "/scripts"
+-        # Check the npm registry for updates every day (weekdays)
+-        schedule:
+-            interval: "weekly"
+-
+-    # Enable version updates for GitHub Actions
+-    -   package-ecosystem: "github-actions"
+-        # Workflow files stored in the default location of `.github/workflows`
+-        # You don't need to specify `/.github/workflows` for `directory`. You can use `directory: "/"`.
+-        directory: "/"
+-        schedule:
+-            interval: "weekly"
+diff --git a/.github/workflows/android-build.yml b/.github/workflows/android-build.yml
+new file mode 100644
+index 0000000..3a0f982
+--- /dev/null
++++ b/.github/workflows/android-build.yml
+@@ -0,0 +1,88 @@
++name: Build Android APK
++
++on:
++  push:
++    branches: [ "**" ]
++  pull_request:
++  workflow_dispatch:
++
++concurrency:
++  group: android-apk-${{ github.ref }}
++  cancel-in-progress: true
++
++jobs:
++  build:
++    runs-on: ubuntu-latest
++    timeout-minutes: 30
++
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++
++      - name: Setup Android SDK
++        uses: android-actions/setup-android@v3
++
++      - name: Setup JDK
++        uses: actions/setup-java@v4
++        with:
++          distribution: temurin
++          java-version: "17"
++          cache: gradle
++
++      - name: Grant execute permission for Gradle wrapper
++        run: chmod +x ./gradlew
++
++      - name: Gradle build (Post28 Debug)
++        run: ./gradlew --no-daemon --stacktrace assemblePost28Debug
++
++      - name: Gradle lint (Post28 Debug)
++        run: ./gradlew --no-daemon --stacktrace lintPost28Debug
++
++      - name: Detect signing secrets
++        id: signing
++        env:
++          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
++        run: |
++          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
++            echo "available=true" >> "$GITHUB_OUTPUT"
++          else
++            echo "available=false" >> "$GITHUB_OUTPUT"
++          fi
++
++      - name: Decode keystore (only when signing is available)
++        if: ${{ steps.signing.outputs.available == 'true' }}
++        env:
++          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
++        run: |
++          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/keystore.jks
++
++      - name: Gradle build (Release - signed)
++        if: ${{ steps.signing.outputs.available == 'true' }}
++        env:
++          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
++          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
++          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
++        run: |
++          ./gradlew --no-daemon --stacktrace assemblePost28Release \
++            -Pandroid.injected.signing.store.file=/tmp/keystore.jks \
++            -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
++            -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
++            -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
++
++
++      - name: Gradle build (Post28 Release - unsigned)
++        if: ${{ steps.signing.outputs.available != 'true' }}
++        run: ./gradlew --no-daemon --stacktrace assemblePost28Release
++
++      - name: Collect APKs
++        run: |
++          mkdir -p artifacts
++          find . -type f -path "*build/outputs/apk*/*.apk" -print -exec cp -v {} artifacts/ \;
++          ls -lah artifacts
++
++      - name: Upload APK artifacts
++        uses: actions/upload-artifact@v4
++        with:
++          name: apks-${{ github.sha }}
++          path: artifacts/*.apk
++          if-no-files-found: error
+diff --git a/.github/workflows/android.yml b/.github/workflows/android.yml
+deleted file mode 100644
+index 4d0bf26..0000000
+--- a/.github/workflows/android.yml
++++ /dev/null
+@@ -1,42 +0,0 @@
+-name: Android CI
+-
+-on:
+-    push:
+-        branches:
+-            - 'main'
+-    pull_request:
+-        branches:
+-            - '*'
+-
+-jobs:
+-    build:
+-        runs-on: ubuntu-latest
+-        steps:
+-            -   name: Checkout sources
+-                uses: actions/checkout@v6
+-
+-            -   name: set up JDK 17
+-                uses: actions/setup-java@v5
+-                with:
+-                    java-version: '17'
+-                    distribution: 'temurin'
+-                    cache: gradle
+-
+-            -   name: Grant execute permission for gradlew
+-                run: chmod +x gradlew
+-
+-            -   name: Add empty keystore.properties
+-                run: echo "storeFile=dummy.jks" > keystore.properties
+-
+-            -   name: Assemble Debug with Gradle
+-                run: ./gradlew assembleDebug
+-
+-            -   name: Bundle Debug with Gradle
+-                run: ./gradlew bundleDebug
+-
+-            -   name: Upload Artifact
+-                uses: actions/upload-artifact@v6
+-                with:
+-                    name: Debug APKs
+-                    path: app/build/outputs/apk/
+-                    retention-days: 30
+diff --git a/.github/workflows/dependencies.yml b/.github/workflows/dependencies.yml
+deleted file mode 100644
+index 65a1472..0000000
+--- a/.github/workflows/dependencies.yml
++++ /dev/null
+@@ -1,31 +0,0 @@
+-name: Dependency Submission
+-
+-on:
+-    push:
+-        branches:
+-            - 'main'
+-
+-permissions:
+-    contents: write
+-
+-jobs:
+-    dependency-submission:
+-        runs-on: ubuntu-latest
+-        steps:
+-            -   name: Checkout sources
+-                uses: actions/checkout@v6
+-
+-            -   name: Setup JDK 17
+-                uses: actions/setup-java@v5
+-                with:
+-                    java-version: '17'
+-                    distribution: 'temurin'
+-
+-            -   name: Add empty keystore.properties
+-                run: echo "storeFile=dummy.jks" > keystore.properties
+-
+-            -   name: Generate and submit dependency graph
+-                uses: gradle/actions/dependency-submission@v5
+-                with:
+-                    # Exclude dependencies that are only resolved in test classpaths
+-                    dependency-graph-exclude-configurations: '.*([aA]ndroidTest|android-test-plugin|unified-test-platform|lint|UnitTest|^test[A-Z]).*'
+diff --git a/.github/workflows/update_data.yml b/.github/workflows/update_data.yml
+deleted file mode 100644
+index 7795470..0000000
+--- a/.github/workflows/update_data.yml
++++ /dev/null
+@@ -1,38 +0,0 @@
+-name: Update Data
+-
+-on:
+-  schedule:
+-    - cron: "42 1 * * 0"
+-  workflow_dispatch:
+-
+-jobs:
+-  update:
+-    runs-on: ubuntu-latest
+-    permissions:
+-      contents: write
+-      pull-requests: write
+-
+-    steps:
+-      - name: Checkout sources
+-        uses: actions/checkout@v6
+-
+-      - name: Set up Python
+-        uses: actions/setup-python@v6
+-        with:
+-          python-version: "3.13"
+-
+-      - name: Install dependencies
+-        run: |
+-          pip install -r scripts/requirements.txt
+-
+-      - name: Run update script
+-        run: python scripts/update_tags.py
+-
+-      - name: Create Pull Request
+-        uses: peter-evans/create-pull-request@v8
+-        with:
+-          commit-message: Update tags.json
+-          branch: ci/update-tags
+-          title: 'Update tags'
+-          body: 'Changed files in data directory'
+-          reviewers: maxwai
+diff --git a/SECURITY.md b/SECURITY.md
+deleted file mode 100644
+index 3b77d03..0000000
+--- a/SECURITY.md
++++ /dev/null
+@@ -1,24 +0,0 @@
+-# Security Policy
+-
+-## Supported Versions
+-
+-Only the latest version is supported. The `pre28` versions are also not supported.
+-
+-## Reporting a Vulnerability
+-
+-If you discover a security vulnerability, please open a private security report in the [Security tab](https://github.com/maxwai/NClientV3/security) of the repo or send an email to [security.penny394@passmail.net](mailto:security.penny394@passmail.net) Please do not create a public issue for the vulnerability.
+-
+-Your email should include the following information:
+-
+-- A description of the vulnerability
+-- Steps to reproduce the vulnerability
+-- Possible impact of the vulnerability
+-- Any suggested mitigation or remediation steps
+-
+-We will respond to your email as soon as possible and work with you to address any security issues.
+-
+-If there isn't a response within 5 working days (considering public holidays in Germany), please send a follow-up post or email, depending on how you reported the vulnerability.
+-
+-## Language
+-
+-All reports must be done in English
+diff --git a/app/build.gradle b/app/build.gradle
+index e9911e0..7f2b082 100644
+--- a/app/build.gradle
++++ b/app/build.gradle
+@@ -2,15 +2,20 @@ apply plugin: 'com.android.application'
+ 
+ def keystorePropertiesFile = rootProject.file("keystore.properties")
+ def keystoreProperties = new Properties()
+-keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
++def hasKeystore = keystorePropertiesFile.exists()
++if (hasKeystore) {
++    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
++}
+ 
+ android {
+     signingConfigs {
+         release {
+-            keyAlias = keystoreProperties['keyAlias']
+-            keyPassword = keystoreProperties['keyPassword']
+-            storeFile = file(keystoreProperties['storeFile'])
+-            storePassword = keystoreProperties['storePassword']
++            if (hasKeystore) {
++                keyAlias = keystoreProperties['keyAlias']
++                keyPassword = keystoreProperties['keyPassword']
++                storeFile = file(keystoreProperties['storeFile'])
++                storePassword = keystoreProperties['storePassword']
++            }
+         }
+     }
+     compileSdk = 36
+@@ -18,9 +23,9 @@ android {
+         applicationId = "com.maxwai.nclientv3"
+         // Format: MmPPbb
+         // M: Major, m: minor, P: Patch, b: build
+-        versionCode = 410500
++        versionCode = 410501
+         multiDexEnabled = true
+-        versionName = "4.1.5"
++        versionName = "4.1.6"
+         vectorDrawables.useSupportLibrary = true
+         proguardFiles 'proguard-rules.pro'
+     }
+@@ -44,7 +49,9 @@ android {
+             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+             versionNameSuffix = "-release"
+             resValue "string", "app_name", "NClientV3"
+-            signingConfig = signingConfigs.release
++            if (hasKeystore) {
++                signingConfig signingConfigs.release
++            }
+         }
+         debug {
+             applicationIdSuffix = ".debug"
+@@ -118,6 +125,8 @@ dependencies {
+     implementation 'com.github.franmontiel:PersistentCookieJar:v1.0.1'
+     // To parse HTML
+     implementation 'org.jsoup:jsoup:1.22.1'
++    // Optional runtime dependency for Jsoup's RE2/J regex implementation (required for R8 full mode).
++    implementation 'com.google.re2j:re2j:1.8'
+     // color picker
+     implementation 'com.github.yukuku:ambilwarna:2.0.1'
+     // fast scroll
+diff --git a/app/proguard-rules.pro b/app/proguard-rules.pro
+index fd98ca2..6fb5224 100644
+--- a/app/proguard-rules.pro
++++ b/app/proguard-rules.pro
+@@ -14,17 +14,15 @@
+ 
+ # Uncomment this to preserve the line number information for
+ # debugging stack traces.
+-#-keepattributes SourceFile,LineNumberTable
++-keepattributes SourceFile,LineNumberTable
+ 
+ # If you keep the line number information, uncomment this to
+ # hide the original source file name.
+ #-renamesourcefileattribute SourceFile
+ 
+--ignorewarnings
+--keep class * {
+-    public private *;
+-}
+-#glide proguard
++# Avoid broad keep rules: they effectively disable shrinking/obfuscation and increase APK size/attack surface.
++
++# Glide proguard
+ -keep public class * implements com.bumptech.glide.module.GlideModule
+ -keep public class * extends com.bumptech.glide.module.AppGlideModule
+ -keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
+@@ -35,7 +33,11 @@
+ -assumenosideeffects class com.maxwai.nclientv3.utility.LogUtility {
+     public static void d(...);
+     public static void i(...);
+-    public static void e(...);
+ }
+--keep public class * implements com.bumptech.glide.module.GlideModule
++
++# WorkManager uses reflection to instantiate workers from their (obfuscated) class names stored in WorkRequest.
++# Keeping the worker constructors avoids edge-case issues across R8 versions.
++-keep class * extends androidx.work.Worker {
++    public <init>(android.content.Context, androidx.work.WorkerParameters);
++}
+ -dontwarn com.bumptech.glide.load.resource.bitmap.VideoDecoder
+diff --git a/app/src/main/AndroidManifest.xml b/app/src/main/AndroidManifest.xml
+index a1c35a7..5f48075 100644
+--- a/app/src/main/AndroidManifest.xml
++++ b/app/src/main/AndroidManifest.xml
+@@ -21,10 +21,10 @@
+         android:name=".components.activities.CrashApplication"
+         android:allowBackup="true"
+         android:enableOnBackInvokedCallback="true"
++        android:forceDarkAllowed="false"
+         android:fullBackupContent="@xml/backup_content"
+         android:icon="@mipmap/ic_launcher"
+         android:label="@string/app_name"
+-        android:requestLegacyExternalStorage="true"
+         android:roundIcon="@mipmap/ic_launcher"
+         android:supportsRtl="true"
+         android:theme="@style/AppTheme"
+diff --git a/app/src/main/java/com/maxwai/nclientv3/SettingsActivity.java b/app/src/main/java/com/maxwai/nclientv3/SettingsActivity.java
+index 6bfd1f8..11f6d99 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/SettingsActivity.java
++++ b/app/src/main/java/com/maxwai/nclientv3/SettingsActivity.java
+@@ -24,6 +24,7 @@ import com.maxwai.nclientv3.async.database.export.Manager;
+ import com.maxwai.nclientv3.components.activities.GeneralActivity;
+ import com.maxwai.nclientv3.components.views.GeneralPreferenceFragment;
+ import com.maxwai.nclientv3.settings.Global;
++import com.maxwai.nclientv3.utility.AppExecutors;
+ import com.maxwai.nclientv3.utility.LogUtility;
+ 
+ import java.io.BufferedReader;
+@@ -38,7 +39,6 @@ import java.text.SimpleDateFormat;
+ import java.util.Date;
+ import java.util.Locale;
+ import java.util.Objects;
+-import java.util.stream.Collectors;
+ 
+ public class SettingsActivity extends GeneralActivity {
+     GeneralPreferenceFragment fragment;
+@@ -118,19 +118,31 @@ public class SettingsActivity extends GeneralActivity {
+             }
+         }, selectedFile -> {
+             if (selectedFile == null) return;
+-            try {
+-                Process process = Runtime.getRuntime().exec(new String[]{"logcat", "-d"});
+-                try (OutputStream outputStream = getContentResolver().openOutputStream(selectedFile);
+-                     Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream));
+-                     BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+-                    String output = in.lines().collect(Collectors.joining("\n"));
+-                    writer.write(output);
++            AppExecutors.io().execute(() -> {
++                boolean ok = false;
++                try {
++                    Process process = new ProcessBuilder("logcat", "-d")
++                        .redirectErrorStream(true)
++                        .start();
++                    try (OutputStream outputStream = getContentResolver().openOutputStream(selectedFile);
++                         Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream));
++                         BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
++                        char[] buffer = new char[8192];
++                        int read;
++                        while ((read = in.read(buffer)) != -1) {
++                            writer.write(buffer, 0, read);
++                        }
++                        writer.flush();
++                    }
++                    ok = process.waitFor() == 0;
++                } catch (Exception e) {
++                    LogUtility.e("Error getting logcat", e);
+                 }
+-                Toast.makeText(this, getString(process.exitValue() != 0 ? R.string.copy_logs_fail : R.string.export_finished), Toast.LENGTH_SHORT).show();
+-            } catch (IOException e) {
+-                LogUtility.e("Error getting logcat", e);
+-                Toast.makeText(this, getString(R.string.copy_logs_fail), Toast.LENGTH_SHORT).show();
+-            }
++                boolean finalOk = ok;
++                runOnUiThread(() ->
++                    Toast.makeText(this, getString(finalOk ? R.string.export_finished : R.string.copy_logs_fail), Toast.LENGTH_SHORT).show()
++                );
++            });
+         });
+     }
+ 
+diff --git a/app/src/main/java/com/maxwai/nclientv3/ZoomActivity.java b/app/src/main/java/com/maxwai/nclientv3/ZoomActivity.java
+index 57beb9d..35f9c07 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/ZoomActivity.java
++++ b/app/src/main/java/com/maxwai/nclientv3/ZoomActivity.java
+@@ -103,7 +103,8 @@ public class ZoomActivity extends GeneralActivity {
+         mViewPager = findViewById(R.id.container);
+         mViewPager.setAdapter(mSectionsPagerAdapter);
+         mViewPager.setOrientation(preferences.getInt(SCROLL_TYPE_KEY, ScrollType.HORIZONTAL.ordinal()));
+-        mViewPager.setOffscreenPageLimit(Global.getOffscreenLimit());
++        // Reader memory safety: keep at most 2 fragments retained by ViewPager2.
++        mViewPager.setOffscreenPageLimit(Math.min(2, Global.getOffscreenLimit()));
+         pageSwitcher = findViewById(R.id.page_switcher);
+         pageManagerLabel = findViewById(R.id.pages);
+         cornerPageViewer = findViewById(R.id.page_text);
+@@ -336,8 +337,9 @@ public class ZoomActivity extends GeneralActivity {
+ 
+     private void makeNearRequests(int newPage) {
+         ZoomFragment fragment;
+-        int offScreenLimit = Global.getOffscreenLimit();
+-        for (int i = newPage - offScreenLimit; i <= newPage + offScreenLimit; i++) {
++        // Limit proactive preloading to at most 1 page ahead/behind to reduce retained bitmaps.
++        final int preloadDistance = 1;
++        for (int i = newPage - preloadDistance; i <= newPage + preloadDistance; i++) {
+             fragment = getActualFragment(i);
+             if (fragment == null) continue;
+             if (i == newPage) fragment.loadImage(Priority.IMMEDIATE);
+@@ -347,9 +349,9 @@ public class ZoomActivity extends GeneralActivity {
+ 
+     private void clearFarRequests(int oldPage, int newPage) {
+         ZoomFragment fragment;
+-        int offScreenLimit = Global.getOffscreenLimit();
+-        for (int i = oldPage - offScreenLimit; i <= oldPage + offScreenLimit; i++) {
+-            if (i >= newPage - offScreenLimit && i <= newPage + offScreenLimit) continue;
++        final int preloadDistance = 1;
++        for (int i = oldPage - preloadDistance; i <= oldPage + preloadDistance; i++) {
++            if (i >= newPage - preloadDistance && i <= newPage + preloadDistance) continue;
+             fragment = getActualFragment(i);
+             if (fragment == null) continue;
+             fragment.cancelRequest();
+@@ -368,7 +370,7 @@ public class ZoomActivity extends GeneralActivity {
+ 
+     private void downloadPage() {
+         final File output = new File(Global.SCREENFOLDER, gallery.getId() + "-" + (mViewPager.getCurrentItem() + 1) + ".jpg");
+-        Utility.saveImage(getActualFragment().getDrawable(), output);
++        Utility.saveImageAsync(this, getActualFragment().getDrawable(), output);
+     }
+ 
+     private void animateLayout() {
+diff --git a/app/src/main/java/com/maxwai/nclientv3/adapters/FavoriteAdapter.java b/app/src/main/java/com/maxwai/nclientv3/adapters/FavoriteAdapter.java
+index 2f5f024..a7a4532 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/adapters/FavoriteAdapter.java
++++ b/app/src/main/java/com/maxwai/nclientv3/adapters/FavoriteAdapter.java
+@@ -19,6 +19,7 @@ import com.maxwai.nclientv3.GalleryActivity;
+ import com.maxwai.nclientv3.R;
+ import com.maxwai.nclientv3.api.components.Gallery;
+ import com.maxwai.nclientv3.async.database.Queries;
++import com.maxwai.nclientv3.components.status.StatusManager;
+ import com.maxwai.nclientv3.settings.Global;
+ import com.maxwai.nclientv3.utility.ImageDownloadUtility;
+ import com.maxwai.nclientv3.utility.LogUtility;
+@@ -64,6 +65,14 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
+         if (galleries[position] != null) return galleries[position];
+         cursor.moveToPosition(position);
+         try {
++            int defaultColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
++            int colorIndex = cursor.getColumnIndex("color");
++            int statusColor = colorIndex >= 0 ? cursor.getInt(colorIndex) : 0;
++            int idIndex = cursor.getColumnIndex(Queries.GalleryTable.IDGALLERY);
++            int id = idIndex >= 0 ? cursor.getInt(idIndex) : -1;
++            if (id >= 0 && statuses.indexOfKey(id) < 0) {
++                statuses.put(id, statusColor == 0 ? defaultColor : statusColor);
++            }
+             Gallery g = Queries.GalleryTable.cursorToGallery(cursor);
+             galleries[position] = g;
+             return g;
+@@ -99,10 +108,7 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
+             return true;
+         });
+         int statusColor = statuses.get(ent.getId(), 0);
+-        if (statusColor == 0) {
+-            statusColor = Queries.StatusMangaTable.getStatus(ent.getId()).color;
+-            statuses.put(ent.getId(), statusColor);
+-        }
++        if (statusColor == 0) statusColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
+         holder.title.setBackgroundColor(statusColor);
+     }
+ 
+diff --git a/app/src/main/java/com/maxwai/nclientv3/adapters/GalleryAdapter.java b/app/src/main/java/com/maxwai/nclientv3/adapters/GalleryAdapter.java
+index 0d1b553..01a2924 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/adapters/GalleryAdapter.java
++++ b/app/src/main/java/com/maxwai/nclientv3/adapters/GalleryAdapter.java
+@@ -292,7 +292,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
+                     break;
+                 case 3:
+                     String name = String.format(Locale.US, "%d-%d.jpg", gallery.getId(), pos);
+-                    Utility.saveImage(imgView.getDrawable(), new File(Global.SCREENFOLDER, name));
++                    Utility.saveImageAsync(context, imgView.getDrawable(), new File(Global.SCREENFOLDER, name));
+                     break;
+             }
+         }).show();
+diff --git a/app/src/main/java/com/maxwai/nclientv3/adapters/ListAdapter.java b/app/src/main/java/com/maxwai/nclientv3/adapters/ListAdapter.java
+index ad2a4b0..a773060 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/adapters/ListAdapter.java
++++ b/app/src/main/java/com/maxwai/nclientv3/adapters/ListAdapter.java
+@@ -20,6 +20,7 @@ import com.maxwai.nclientv3.api.components.GenericGallery;
+ import com.maxwai.nclientv3.api.enums.Language;
+ import com.maxwai.nclientv3.async.database.Queries;
+ import com.maxwai.nclientv3.components.activities.BaseActivity;
++import com.maxwai.nclientv3.components.status.StatusManager;
+ import com.maxwai.nclientv3.settings.Global;
+ import com.maxwai.nclientv3.settings.TagV2;
+ import com.maxwai.nclientv3.utility.ImageDownloadUtility;
+@@ -120,25 +121,25 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
+             return true;
+         });
+         int statusColor = statuses.get(ent.getId(), 0);
+-        if (statusColor == 0) {
+-            statusColor = Queries.StatusMangaTable.getStatus(ent.getId()).color;
+-            statuses.put(ent.getId(), statusColor);
+-        }
++        if (statusColor == 0) statusColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
+         holder.title.setBackgroundColor(statusColor);
+     }
+ 
+     public void updateColor(int id) {
+         if (id < 0) return;
+-        int position = -1;
+-        statuses.put(id, Queries.StatusMangaTable.getStatus(id).color);
+-        for (int i = 0; i < mDataset.size(); i++) {
+-            SimpleGallery gallery= mDataset.get(i);
+-            if (gallery != null && gallery.getId() == id) {
+-                position = id;
+-                break;
++        new Thread(() -> {
++            int position = -1;
++            statuses.put(id, Queries.StatusMangaTable.getStatus(id).color);
++            for (int i = 0; i < mDataset.size(); i++) {
++                SimpleGallery gallery = mDataset.get(i);
++                if (gallery != null && gallery.getId() == id) {
++                    position = i;
++                    break;
++                }
+             }
+-        }
+-        if (position >= 0) notifyItemChanged(position);
++            int finalPosition = position;
++            if (finalPosition >= 0) context.runOnUiThread(() -> notifyItemChanged(finalPosition));
++        }).start();
+     }
+ 
+     private void downloadGallery(final SimpleGallery ent) {
+@@ -190,6 +191,7 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
+ 
+             LogUtility.d("Simple: " + g);
+         }
++        prefetchStatusColors(galleries);
+         LogUtility.d(String.format(Locale.US, "%s,old:%d,new:%d,len%d", this, c, mDataset.size(), galleries.size()));
+         context.runOnUiThread(() -> notifyItemRangeInserted(c, galleries.size()));
+     }
+@@ -203,12 +205,35 @@ public class ListAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHolder>
+         mDataset.addAll(galleries);
+         context.runOnUiThread(()->notifyItemRangeInserted(0,galleries.size()));*/
+         mDataset.clear();
++        statuses.clear();
+         for (GenericGallery g : galleries)
+             if (g instanceof SimpleGallery)
+                 mDataset.add((SimpleGallery) g);
++        prefetchStatusColors(galleries);
+         context.runOnUiThread(this::notifyDataSetChanged);
+     }
+ 
++    private void prefetchStatusColors(@NonNull List<GenericGallery> galleries) {
++        if (galleries.isEmpty()) return;
++        int[] ids = new int[galleries.size()];
++        int count = 0;
++        for (GenericGallery g : galleries) {
++            if (g == null) continue;
++            int id = g.getId();
++            if (id <= 0) continue;
++            if (statuses.indexOfKey(id) >= 0) continue;
++            ids[count++] = id;
++        }
++        if (count == 0) return;
++        int[] queryIds = new int[count];
++        System.arraycopy(ids, 0, queryIds, 0, count);
++        SparseIntArray loaded = Queries.StatusMangaTable.getStatusColors(queryIds);
++        int defaultColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
++        for (int i = 0; i < count; i++) {
++            int id = queryIds[i];
++            statuses.put(id, loaded.get(id, defaultColor));
++        }
++    }
+ 
+     public void resetStatuses() {
+         statuses.clear();
+diff --git a/app/src/main/java/com/maxwai/nclientv3/adapters/LocalAdapter.java b/app/src/main/java/com/maxwai/nclientv3/adapters/LocalAdapter.java
+index 3d7dc55..5535083 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/adapters/LocalAdapter.java
++++ b/app/src/main/java/com/maxwai/nclientv3/adapters/LocalAdapter.java
+@@ -33,7 +33,9 @@ import com.maxwai.nclientv3.async.downloader.DownloadObserver;
+ import com.maxwai.nclientv3.async.downloader.DownloadQueue;
+ import com.maxwai.nclientv3.async.downloader.GalleryDownloaderV2;
+ import com.maxwai.nclientv3.components.classes.MultichoiceAdapter;
++import com.maxwai.nclientv3.components.status.StatusManager;
+ import com.maxwai.nclientv3.settings.Global;
++import com.maxwai.nclientv3.utility.AppExecutors;
+ import com.maxwai.nclientv3.utility.ImageDownloadUtility;
+ import com.maxwai.nclientv3.utility.LogUtility;
+ import com.maxwai.nclientv3.utility.Utility;
+@@ -190,11 +192,33 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
+         if (gallery != null && !gallery.isEmpty()) {
+             dataset.removeAll(gallery);
+             dataset.addAll(gallery);
++            prefetchStatusColors(gallery);
+             sortElements();
+             context.runOnUiThread(() -> notifyItemRangeChanged(0, getItemCount()));
+         }
+     }
+ 
++    private void prefetchStatusColors(@NonNull List<LocalGallery> galleries) {
++        int[] ids = new int[galleries.size()];
++        int count = 0;
++        for (LocalGallery g : galleries) {
++            if (g == null) continue;
++            int id = g.getId();
++            if (id <= 0) continue;
++            if (statuses.indexOfKey(id) >= 0) continue;
++            ids[count++] = id;
++        }
++        if (count == 0) return;
++        int[] queryIds = new int[count];
++        System.arraycopy(ids, 0, queryIds, 0, count);
++        SparseIntArray loaded = Queries.StatusMangaTable.getStatusColors(queryIds);
++        int defaultColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
++        for (int i = 0; i < count; i++) {
++            int id = queryIds[i];
++            statuses.put(id, loaded.get(id, defaultColor));
++        }
++    }
++
+     @Override
+     protected ViewGroup getMaster(ViewHolder holder) {
+         return holder.layout;
+@@ -303,22 +327,25 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
+             return true;
+         });*/
+         int statusColor = statuses.get(ent.getId(), 0);
+-        if (statusColor == 0) {
+-            statusColor = Queries.StatusMangaTable.getStatus(ent.getId()).color;
+-            statuses.put(ent.getId(), statusColor);
+-        }
++        if (statusColor == 0) statusColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
+         holder.title.setBackgroundColor(statusColor);
+     }
+ 
+     public void updateColor(int id) {
+         if (id < 0) return;
+-        statuses.put(id, Queries.StatusMangaTable.getStatus(id).color);
+-        for (int i = 0; i < filter.size(); i++) {
+-            Object o = filter.get(i);
+-            if (!(o instanceof LocalGallery)) continue;
+-            LocalGallery lg = (LocalGallery) o;
+-            if (lg.getId() == id) notifyItemChanged(i);
+-        }
++        new Thread(() -> {
++            statuses.put(id, Queries.StatusMangaTable.getStatus(id).color);
++            for (int i = 0; i < filter.size(); i++) {
++                Object o = filter.get(i);
++                if (!(o instanceof LocalGallery)) continue;
++                LocalGallery lg = (LocalGallery) o;
++                if (lg.getId() == id) {
++                    int pos = i;
++                    context.runOnUiThread(() -> notifyItemChanged(pos));
++                    break;
++                }
++            }
++        }).start();
+     }
+ 
+     @Override
+@@ -394,16 +421,22 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
+         builder.setTitle(R.string.delete_galleries).setMessage(getAllGalleries());
+         builder.setPositiveButton(R.string.yes, (dialog, which) -> {
+             ArrayList<Object> coll = new ArrayList<>(getSelected());
++            ArrayList<File> toDelete = new ArrayList<>();
+             for (Object o : coll) {
+                 filter.remove(o);
+                 if (o instanceof LocalGallery) {
+                     dataset.remove(o);
+-                    Global.recursiveDelete(((LocalGallery) o).getDirectory());
++                    toDelete.add(((LocalGallery) o).getDirectory());
+                 } else if (o instanceof GalleryDownloaderV2) {
+                     DownloadQueue.remove((GalleryDownloaderV2) o, true);
+                 }
+             }
+             context.runOnUiThread(this::notifyDataSetChanged);
++            if (!toDelete.isEmpty()) {
++                AppExecutors.io().execute(() -> {
++                    for (File dir : toDelete) Global.recursiveDelete(dir);
++                });
++            }
+         }).setNegativeButton(R.string.no, null).setCancelable(true);
+         builder.show();
+     }
+diff --git a/app/src/main/java/com/maxwai/nclientv3/api/local/LocalGallery.java b/app/src/main/java/com/maxwai/nclientv3/api/local/LocalGallery.java
+index 34ec3d3..3a15335 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/api/local/LocalGallery.java
++++ b/app/src/main/java/com/maxwai/nclientv3/api/local/LocalGallery.java
+@@ -110,8 +110,12 @@ public class LocalGallery extends GenericGallery {
+     @NonNull
+     private GalleryData readGalleryData() {
+         if (folder == null) return GalleryData.fakeData();
+-        File nomedia = folder.getGalleryDataFile();
+-        try (JsonReader reader = new JsonReader(new FileReader(nomedia))) {
++        File dataFile = folder.getGalleryDataFile();
++        if (dataFile == null || !dataFile.isFile()) {
++            hasAdvancedData = false;
++            return GalleryData.fakeData();
++        }
++        try (JsonReader reader = new JsonReader(new FileReader(dataFile))) {
+             return new GalleryData(reader);
+         } catch (Exception ignore) {
+         }
+diff --git a/app/src/main/java/com/maxwai/nclientv3/async/ScrapeTags.java b/app/src/main/java/com/maxwai/nclientv3/async/ScrapeTags.java
+index 29aff63..0e1d613 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/async/ScrapeTags.java
++++ b/app/src/main/java/com/maxwai/nclientv3/async/ScrapeTags.java
+@@ -2,8 +2,13 @@ package com.maxwai.nclientv3.async;
+ 
+ import android.content.Context;
+ import android.content.SharedPreferences;
++import android.util.JsonReader;
+ 
+ import androidx.annotation.NonNull;
++import androidx.work.BackoffPolicy;
++import androidx.work.Constraints;
++import androidx.work.ExistingWorkPolicy;
++import androidx.work.NetworkType;
+ import androidx.work.OneTimeWorkRequest;
+ import androidx.work.WorkManager;
+ import androidx.work.WorkRequest;
+@@ -17,14 +22,13 @@ import com.maxwai.nclientv3.async.database.Queries;
+ import com.maxwai.nclientv3.settings.Global;
+ import com.maxwai.nclientv3.utility.LogUtility;
+ 
+-import org.json.JSONArray;
+-import org.json.JSONException;
+-
+ import java.io.IOException;
++import java.io.Reader;
+ import java.util.ArrayList;
+ import java.util.Calendar;
+ import java.util.Date;
+ import java.util.List;
++import java.util.concurrent.TimeUnit;
+ 
+ import okhttp3.Request;
+ import okhttp3.Response;
+@@ -32,6 +36,7 @@ import okhttp3.ResponseBody;
+ 
+ public class ScrapeTags extends Worker {
+     private static final int DAYS_UNTIL_SCRAPE = 7;
++    private static final String UNIQUE_WORK_NAME = "ScrapeTags";
+     private static final String DATA_FOLDER = "https://raw.githubusercontent.com/maxwai/NClientV3/main/data/";
+     private static final String TAGS = DATA_FOLDER + "tags.json";
+     private static final String VERSION = DATA_FOLDER + "tagsVersion";
+@@ -41,8 +46,14 @@ public class ScrapeTags extends Worker {
+     }
+ 
+     public static void startWork(Context context) {
+-        WorkRequest scrapeTagsWorkRequest = new OneTimeWorkRequest.Builder(ScrapeTags.class).build();
+-        WorkManager.getInstance(context).enqueue(scrapeTagsWorkRequest);
++        Constraints constraints = new Constraints.Builder()
++            .setRequiredNetworkType(NetworkType.CONNECTED)
++            .build();
++        OneTimeWorkRequest scrapeTagsWorkRequest = new OneTimeWorkRequest.Builder(ScrapeTags.class)
++            .setConstraints(constraints)
++            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
++            .build();
++        WorkManager.getInstance(context).enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, scrapeTagsWorkRequest);
+     }
+ 
+     private int getNewVersionCode() throws IOException {
+@@ -66,16 +77,25 @@ public class ScrapeTags extends Worker {
+         Date nowTime = new Date();
+         Date lastTime = new Date(preferences.getLong("lastSync", nowTime.getTime()));
+         int lastVersion = preferences.getInt("lastTagsVersion", -1), newVersion;
+-        if (!enoughDayPassed(nowTime, lastTime)) return Result.retry();
++        if (!enoughDayPassed(nowTime, lastTime)) return Result.success();
+ 
+         LogUtility.d("Scraping tags");
+         try {
+             newVersion = getNewVersionCode();
+-            if (lastVersion > -1 && lastVersion >= newVersion) return Result.success();
++            if (lastVersion > -1 && lastVersion >= newVersion) {
++                preferences.edit()
++                    .putLong("lastSync", nowTime.getTime())
++                    .putInt("lastTagsVersion", newVersion)
++                    .apply();
++                return Result.success();
++            }
+             List<Tag> tags = Queries.TagTable.getAllFiltered();
+             fetchTags();
+             for (Tag t : tags) Queries.TagTable.updateStatus(t.getId(), t.getStatus());
+-        } catch (IOException | JSONException e) {
++        } catch (IOException e) {
++            LogUtility.w("Error updating Tags", e);
++            return Result.retry();
++        } catch (Exception e) {
+             LogUtility.w("Error updating Tags", e);
+             return Result.failure();
+         }
+@@ -87,35 +107,38 @@ public class ScrapeTags extends Worker {
+         return Result.success();
+     }
+ 
+-    private void fetchTags() throws IOException, JSONException {
++    private void fetchTags() throws IOException {
+         try (Response x = Global.getClient(getApplicationContext())
+             .newCall(new Request.Builder().url(TAGS).build())
+             .execute()) {
+             ResponseBody body = x.body();
+-            JSONArray rootArray = new JSONArray(body.string());
+-            int size = rootArray.length();
+             int batchSize = 5000;
+-            try {
++            if (body == null) throw new IOException("Empty tag response body");
++            try (Reader reader = body.charStream();
++                 JsonReader jr = new JsonReader(reader)) {
+                 List<Tag> tags = new ArrayList<>(batchSize);
+-                for (int i = 0; i <= size / batchSize; i++) {
+-                    tags.clear();
+-                    for (int j = i * batchSize; j < i * batchSize + batchSize && j < size; j++) {
+-                        JSONArray entry = rootArray.getJSONArray(j);
+-                        tags.add(readTag(entry));
++                jr.beginArray();
++                while (jr.hasNext()) {
++                    tags.add(readTag(jr));
++                    if (tags.size() >= batchSize) {
++                        Queries.TagTable.insertScrape(tags, true);
++                        tags.clear();
+                     }
+-                    Queries.TagTable.insertScrape(tags, true);
+                 }
+-            } catch (JSONException ignored) {
+-                throw new JSONException("Something went wrong parsing json");
++                jr.endArray();
++                if (!tags.isEmpty()) Queries.TagTable.insertScrape(tags, true);
+             }
+         }
+     }
+ 
+-    private Tag readTag(JSONArray reader) throws JSONException {
+-        int id = reader.getInt(0);
+-        String name = reader.getString(1);
+-        int count = reader.getInt(2);
+-        TagType type = TagType.values[reader.getInt(3)];
++    private Tag readTag(JsonReader reader) throws IOException {
++        reader.beginArray();
++        int id = reader.nextInt();
++        String name = reader.nextString();
++        int count = reader.nextInt();
++        TagType type = TagType.values[reader.nextInt()];
++        while (reader.hasNext()) reader.skipValue();
++        reader.endArray();
+         return new Tag(name, count, id, type, TagStatus.DEFAULT);
+     }
+ 
+diff --git a/app/src/main/java/com/maxwai/nclientv3/async/converters/CreatePdfOrZip.java b/app/src/main/java/com/maxwai/nclientv3/async/converters/CreatePdfOrZip.java
+index b1cbed4..7c45000 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/async/converters/CreatePdfOrZip.java
++++ b/app/src/main/java/com/maxwai/nclientv3/async/converters/CreatePdfOrZip.java
+@@ -13,6 +13,8 @@ import android.net.Uri;
+ import androidx.annotation.NonNull;
+ import androidx.core.app.NotificationCompat;
+ import androidx.core.content.FileProvider;
++import androidx.work.BackoffPolicy;
++import androidx.work.Constraints;
+ import androidx.work.Data;
+ import androidx.work.OneTimeWorkRequest;
+ import androidx.work.WorkManager;
+@@ -30,19 +32,16 @@ import java.io.File;
+ import java.io.FileInputStream;
+ import java.io.FileOutputStream;
+ import java.io.IOException;
+-import java.util.Collections;
+-import java.util.HashMap;
+ import java.util.List;
+-import java.util.Map;
+-import java.util.Random;
++import java.util.concurrent.TimeUnit;
+ import java.util.zip.Deflater;
+ import java.util.zip.ZipEntry;
+ import java.util.zip.ZipOutputStream;
+ 
+ public class CreatePdfOrZip extends Worker {
+-    private static final String GALLERY_ID_KEY = "GALLERY_ID";
++    private static final String GALLERY_DIR_KEY = "GALLERY_DIR";
+     private static final String PDF_OR_ZIP_KEY = "PDF_OR_ZIP";
+-    private static final Map<Integer, LocalGallery> galleryMap = Collections.synchronizedMap(new HashMap<>());
++    private static final int PDF_MAX_PIXELS = 4_000_000;
+     private int notId;
+     private int totalPage;
+     private NotificationCompat.Builder notification;
+@@ -52,20 +51,45 @@ public class CreatePdfOrZip extends Worker {
+     }
+ 
+     public static void startWork(Context context, LocalGallery gallery, boolean pdf) {
+-        int id;
+-        do {
+-            id = new Random().nextInt(Integer.MAX_VALUE);
+-        } while (galleryMap.containsKey(id));
+-        galleryMap.put(id, gallery);
++        NotificationSettings.requestPostNotificationsIfNeeded(context);
++        String directory = gallery.getDirectory().getAbsolutePath();
++        Constraints constraints = new Constraints.Builder()
++            .setRequiresStorageNotLow(true)
++            .setRequiresBatteryNotLow(true)
++            .build();
+         WorkRequest createPdfOrZipWorkRequest = new OneTimeWorkRequest.Builder(CreatePdfOrZip.class)
+             .setInputData(new Data.Builder()
+-                .putInt(GALLERY_ID_KEY, id)
++                .putString(GALLERY_DIR_KEY, directory)
+                 .putBoolean(PDF_OR_ZIP_KEY, pdf)
+                 .build())
++            .setConstraints(constraints)
++            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+             .build();
+         WorkManager.getInstance(context).enqueue(createPdfOrZipWorkRequest);
+     }
+ 
++    private static int computeInSampleSize(int width, int height, int maxPixels) {
++        long pixels = (long) width * (long) height;
++        int sample = 1;
++        while (pixels / ((long) sample * (long) sample) > maxPixels) {
++            sample *= 2;
++        }
++        return Math.max(1, sample);
++    }
++
++    private static Bitmap decodeForPdf(File page) {
++        BitmapFactory.Options bounds = new BitmapFactory.Options();
++        bounds.inJustDecodeBounds = true;
++        BitmapFactory.decodeFile(page.getAbsolutePath(), bounds);
++        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
++
++        BitmapFactory.Options options = new BitmapFactory.Options();
++        options.inSampleSize = computeInSampleSize(bounds.outWidth, bounds.outHeight, PDF_MAX_PIXELS);
++        options.inPreferredConfig = Bitmap.Config.RGB_565;
++        options.inDither = true;
++        return BitmapFactory.decodeFile(page.getAbsolutePath(), options);
++    }
++
+     public static boolean hasPDFCapabilities() {
+         try {
+             Class.forName("android.graphics.pdf.PdfDocument");
+@@ -79,7 +103,6 @@ public class CreatePdfOrZip extends Worker {
+     @Override
+     public Result doWork() {
+         notId = NotificationSettings.getNotificationId();
+-        System.gc();
+         if (!getInputData().hasKeyWithValueOfType(PDF_OR_ZIP_KEY, Boolean.class)) {
+             return Result.failure();
+         }
+@@ -87,14 +110,16 @@ public class CreatePdfOrZip extends Worker {
+         if (pdf && !hasPDFCapabilities()) {
+             return Result.failure();
+         }
+-        int galleryId = getInputData().getInt(GALLERY_ID_KEY, -1);
+-        if (galleryId == -1) {
++        String directoryPath = getInputData().getString(GALLERY_DIR_KEY);
++        if (directoryPath == null || directoryPath.trim().isEmpty()) {
+             return Result.failure();
+         }
+-        LocalGallery gallery = galleryMap.remove(galleryId);
+-        if (gallery == null) {
++        File directory = new File(directoryPath);
++        if (!directory.isDirectory()) {
+             return Result.failure();
+         }
++        LocalGallery gallery = new LocalGallery(directory, false);
++        if (!gallery.isValid()) return Result.failure();
+         totalPage = gallery.getPageCount();
+         preExecute(gallery.getDirectory(), pdf);
+         if (pdf) {
+@@ -104,7 +129,7 @@ public class CreatePdfOrZip extends Worker {
+                 for (int a = 1; a <= gallery.getPageCount(); a++) {
+                     page = gallery.getPage(a);
+                     if (page == null) continue;
+-                    Bitmap bitmap = BitmapFactory.decodeFile(page.getAbsolutePath());
++                    Bitmap bitmap = decodeForPdf(page);
+                     if (bitmap != null) {
+                         PdfDocument.PageInfo info = new PdfDocument.PageInfo.Builder(bitmap.getWidth(), bitmap.getHeight(), a).create();
+                         PdfDocument.Page p = document.startPage(info);
+@@ -155,7 +180,7 @@ public class CreatePdfOrZip extends Worker {
+                     out.setLevel(Deflater.BEST_COMPRESSION);
+                     File actual;
+                     int read;
+-                    byte[] buffer = new byte[1024];
++                    byte[] buffer = new byte[16 * 1024];
+                     for (int i = 1; i <= gallery.getPageCount(); i++) {
+                         actual = gallery.getPage(i);
+                         if (actual == null) continue;
+diff --git a/app/src/main/java/com/maxwai/nclientv3/async/database/Queries.java b/app/src/main/java/com/maxwai/nclientv3/async/database/Queries.java
+index 43478aa..6b9ed7b 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/async/database/Queries.java
++++ b/app/src/main/java/com/maxwai/nclientv3/async/database/Queries.java
+@@ -6,6 +6,7 @@ import android.content.Context;
+ import android.database.Cursor;
+ import android.database.DatabaseUtils;
+ import android.database.sqlite.SQLiteDatabase;
++import android.util.SparseIntArray;
+ 
+ import androidx.annotation.NonNull;
+ import androidx.annotation.Nullable;
+@@ -805,11 +806,21 @@ public class Queries {
+             GalleryTable.TITLE_PRETTY
+         );
+ 
+-        private static final String FAVORITE_JOIN_GALLERY = String.format(Locale.US, "%s INNER JOIN %s ON %s=%s",
++        // Also left-join status color so RecyclerView binds don't query the DB.
++        private static final String FAVORITE_JOIN_GALLERY = String.format(Locale.US,
++            "%s INNER JOIN %s ON %s=%s " +
++                "LEFT JOIN %s ON %s=%s " +
++                "LEFT JOIN %s ON %s=%s",
+             FavoriteTable.TABLE_NAME,
+             GalleryTable.TABLE_NAME,
+             FavoriteTable.ID_GALLERY,
+-            GalleryTable.IDGALLERY
++            GalleryTable.IDGALLERY,
++            StatusMangaTable.TABLE_NAME,
++            GalleryTable.IDGALLERY,
++            StatusMangaTable.GALLERY,
++            StatusTable.TABLE_NAME,
++            StatusMangaTable.NAME,
++            StatusTable.NAME
+         );
+ 
+         public static void addFavorite(Gallery gallery) {
+@@ -994,6 +1005,41 @@ public class Queries {
+             }
+         }
+ 
++        /**
++         * Bulk-load status colors for a set of gallery IDs in a single query (batched to avoid SQLite bind limits).
++         * Intended for background threads to keep RecyclerView binds non-blocking.
++         */
++        @NonNull
++        public static SparseIntArray getStatusColors(@NonNull int[] galleryIds) {
++            SparseIntArray out = new SparseIntArray(galleryIds.length);
++            if (galleryIds.length == 0) return out;
++            final int batchSize = 500; // keep well under SQLite's 999 bind limit
++            for (int start = 0; start < galleryIds.length; start += batchSize) {
++                int end = Math.min(galleryIds.length, start + batchSize);
++                int len = end - start;
++                StringBuilder sql = new StringBuilder(128 + len * 2);
++                sql.append("SELECT sm.").append(GALLERY).append(", st.").append(StatusTable.COLOR)
++                    .append(" FROM ").append(TABLE_NAME).append(" sm")
++                    .append(" INNER JOIN ").append(StatusTable.TABLE_NAME).append(" st ON sm.").append(NAME).append("=st.").append(StatusTable.NAME)
++                    .append(" WHERE sm.").append(GALLERY).append(" IN (");
++                String[] args = new String[len];
++                for (int i = 0; i < len; i++) {
++                    if (i > 0) sql.append(',');
++                    sql.append('?');
++                    args[i] = Integer.toString(galleryIds[start + i]);
++                }
++                sql.append(')');
++                try (Cursor c = db.rawQuery(sql.toString(), args)) {
++                    if (c.moveToFirst()) {
++                        do {
++                            out.put(c.getInt(0), c.getInt(1));
++                        } while (c.moveToNext());
++                    }
++                }
++            }
++            return out;
++        }
++
+         public static void insert(GenericGallery gallery, String s) {
+             insert(gallery, StatusManager.getByName(s));
+         }
+diff --git a/app/src/main/java/com/maxwai/nclientv3/async/downloader/DownloadGalleryV2.java b/app/src/main/java/com/maxwai/nclientv3/async/downloader/DownloadGalleryV2.java
+index 0a701c1..c4f0d7d 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/async/downloader/DownloadGalleryV2.java
++++ b/app/src/main/java/com/maxwai/nclientv3/async/downloader/DownloadGalleryV2.java
+@@ -5,6 +5,10 @@ import android.net.Uri;
+ 
+ import androidx.annotation.NonNull;
+ import androidx.annotation.Nullable;
++import androidx.work.BackoffPolicy;
++import androidx.work.Constraints;
++import androidx.work.ExistingWorkPolicy;
++import androidx.work.NetworkType;
+ import androidx.work.OneTimeWorkRequest;
+ import androidx.work.WorkManager;
+ import androidx.work.WorkRequest;
+@@ -15,21 +19,25 @@ import com.maxwai.nclientv3.api.SimpleGallery;
+ import com.maxwai.nclientv3.api.components.Gallery;
+ import com.maxwai.nclientv3.api.components.GenericGallery;
+ import com.maxwai.nclientv3.async.database.Queries;
++import com.maxwai.nclientv3.settings.NotificationSettings;
+ import com.maxwai.nclientv3.utility.LogUtility;
+ import com.maxwai.nclientv3.utility.Utility;
+ 
+ import java.io.IOException;
+ import java.util.List;
++import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.locks.ReentrantLock;
+ 
+ public class DownloadGalleryV2 extends Worker {
+     private static final ReentrantLock lock = new ReentrantLock();
++    private static final String UNIQUE_WORK_NAME = "DownloadGalleryV2";
+ 
+     public DownloadGalleryV2(@NonNull Context context, @NonNull WorkerParameters params) {
+         super(context, params);
+     }
+ 
+     public static void downloadGallery(Context context, GenericGallery gallery) {
++        NotificationSettings.requestPostNotificationsIfNeeded(context);
+         if (gallery.isValid() && gallery instanceof Gallery)
+             downloadGallery(context, (Gallery) gallery);
+         if (gallery.getId() > 0) {
+@@ -75,8 +83,14 @@ public class DownloadGalleryV2 extends Worker {
+ 
+     public static void startWork(@Nullable Context context) {
+         if (context != null) {
+-            WorkRequest DownloadGalleryWorkRequest = new OneTimeWorkRequest.Builder(DownloadGalleryV2.class).build();
+-            WorkManager.getInstance(context).enqueue(DownloadGalleryWorkRequest);
++            Constraints constraints = new Constraints.Builder()
++                .setRequiredNetworkType(NetworkType.CONNECTED)
++                .build();
++            OneTimeWorkRequest downloadGalleryWorkRequest = new OneTimeWorkRequest.Builder(DownloadGalleryV2.class)
++                .setConstraints(constraints)
++                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
++                .build();
++            WorkManager.getInstance(context).enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, downloadGalleryWorkRequest);
+         }
+     }
+ 
+@@ -87,6 +101,11 @@ public class DownloadGalleryV2 extends Worker {
+         try {
+             obtainData();
+             GalleryDownloaderManager entry = DownloadQueue.fetch();
++            if (entry == null) {
++                reloadQueueFromDatabase();
++                obtainData();
++                entry = DownloadQueue.fetch();
++            }
+             if (entry != null) {
+                 LogUtility.d("Downloading: " + entry.downloader().getId());
+                 if (entry.downloader().downloadGalleryData()) {
+@@ -99,6 +118,18 @@ public class DownloadGalleryV2 extends Worker {
+         return Result.success();
+     }
+ 
++    private void reloadQueueFromDatabase() {
++        try {
++            List<GalleryDownloaderManager> entries = Queries.DownloadTable.getAllDownloads(getApplicationContext());
++            for (GalleryDownloaderManager gg : entries) {
++                gg.downloader().setStatus(GalleryDownloaderV2.Status.PAUSED);
++                DownloadQueue.add(gg);
++            }
++        } catch (IOException e) {
++            LogUtility.w("Failed to reload download queue", e);
++        }
++    }
++
+     private void obtainData() {
+         GalleryDownloaderV2 downloader = DownloadQueue.fetchForData();
+         while (downloader != null) {
+diff --git a/app/src/main/java/com/maxwai/nclientv3/async/downloader/GalleryDownloaderV2.java b/app/src/main/java/com/maxwai/nclientv3/async/downloader/GalleryDownloaderV2.java
+index e0087c2..cde5e82 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/async/downloader/GalleryDownloaderV2.java
++++ b/app/src/main/java/com/maxwai/nclientv3/async/downloader/GalleryDownloaderV2.java
+@@ -266,16 +266,26 @@ public class GalleryDownloaderV2 {
+             if (r.code() != 200) {
+                 return false;
+             }
+-            //noinspection DataFlowIssue
+-            long expectedSize = Integer.parseInt(r.header("Content-Length", "-1"));
+-            long len = r.body().contentLength();
+-            if (len < 0 || expectedSize != len) {
++            if (r.body() == null) return false;
++
++            long expectedLength = r.body().contentLength(); // -1 when unknown (chunked/gzip/etc)
++            File partial = new File(folder, page.getPageName() + ".part");
++            long written = Utility.writeStreamToFile(r.body().byteStream(), partial);
++            if (expectedLength >= 0 && written != expectedLength) {
++                //noinspection ResultOfMethodCallIgnored
++                partial.delete();
+                 return false;
+             }
+-            long written = Utility.writeStreamToFile(r.body().byteStream(), filePath);
+-            if (written != len) {
++            if (isCorrupted(partial)) {
+                 //noinspection ResultOfMethodCallIgnored
+-                filePath.delete();
++                partial.delete();
++                return false;
++            }
++            //noinspection ResultOfMethodCallIgnored
++            filePath.delete();
++            if (!partial.renameTo(filePath)) {
++                //noinspection ResultOfMethodCallIgnored
++                partial.delete();
+                 return false;
+             }
+             return true;
+@@ -333,8 +343,12 @@ public class GalleryDownloaderV2 {
+ 
+     private void writeNoMedia() throws IOException {
+         File nomedia = new File(folder, ".nomedia");
+-        LogUtility.d("NOMEDIA: " + nomedia + " for id " + id);
+-        try (FileWriter writer = new FileWriter(nomedia)) {
++        //noinspection ResultOfMethodCallIgnored
++        nomedia.createNewFile();
++
++        File dataFile = new File(folder, ".gallery.json");
++        LogUtility.d("Gallery metadata: " + dataFile + " for id " + id);
++        try (FileWriter writer = new FileWriter(dataFile)) {
+             gallery.jsonWrite(writer);
+         }
+     }
+diff --git a/app/src/main/java/com/maxwai/nclientv3/components/CookieInterceptor.java b/app/src/main/java/com/maxwai/nclientv3/components/CookieInterceptor.java
+index ff235ae..8bc7ed1 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/components/CookieInterceptor.java
++++ b/app/src/main/java/com/maxwai/nclientv3/components/CookieInterceptor.java
+@@ -10,10 +10,10 @@ import com.maxwai.nclientv3.components.views.CFTokenView;
+ import com.maxwai.nclientv3.utility.LogUtility;
+ import com.maxwai.nclientv3.utility.Utility;
+ 
++import java.io.IOException;
+ import java.util.HashMap;
+ 
+ public class CookieInterceptor {
+-    private static volatile boolean intercepting = false;
+     private static volatile boolean webViewHidden = false;
+ 
+     public static void hideWebView() {
+@@ -26,71 +26,52 @@ public class CookieInterceptor {
+ 
+     @NonNull
+     private final Manager manager;
+-    String cookies = null;
+-    private CFTokenView web = null;
+ 
+     public CookieInterceptor(@NonNull Manager manager) {
+         this.manager = manager;
+     }
+ 
+-    private CFTokenView setupWebView() {
++    private void maybeStartCloudflareFlow() {
+         CFTokenView tokenView = GeneralActivity.getLastCFView();
+-        if (tokenView == null) return null;
++        if (tokenView == null) return;
+         tokenView.post(() -> {
+             CFTokenView.CFTokenWebView webView = tokenView.getWebView();
+             webView.loadUrl(Utility.getBaseUrl());
++            if (!webViewHidden) tokenView.setVisibility(View.VISIBLE);
+         });
+-        return tokenView;
+     }
+ 
+-    @NonNull
+-    private CFTokenView getWebView() {
+-        while (web == null) {
+-            Utility.threadSleep(100);
+-            web = setupWebView();
++    /**
++     * Fail-fast cookie interception: never busy-waits and never depends on an Activity/WebView being alive.
++     * If required cookies are missing, triggers the existing Cloudflare/WebView flow (if available) and throws.
++     */
++    public void intercept() throws IOException {
++        if (manager.endInterceptor()) {
++            manager.onFinish();
++            return;
+         }
+-        return web;
+-    }
+-
+-    private void interceptInternal() {
+-        CFTokenView web = getWebView();
+-        if(!webViewHidden)
+-            web.post(() -> web.setVisibility(View.VISIBLE));
+-        CookieManager manager = CookieManager.getInstance();
+-        HashMap<String, String> cookiesMap = new HashMap<>();
+-        do {
+-            Utility.threadSleep(100);
+-            cookies = manager.getCookie(Utility.getBaseUrl());
+-            if (cookies == null)
+-                return;
++        String cookies = CookieManager.getInstance().getCookie(Utility.getBaseUrl());
++        if (cookies != null) {
++            HashMap<String, String> cookiesMap = new HashMap<>();
+             String[] splitCookies = cookies.split("; ");
+             for (String splitCookie : splitCookies) {
+                 String[] kv = splitCookie.split("=", 2);
+-                if (kv.length == 2) {
+-                    if (!kv[1].equals(cookiesMap.put(kv[0], kv[1]))) {
+-                        LogUtility.d("Processing cookie: " + kv[0] + "=" + kv[1]);
+-                        CookieInterceptor.this.manager.applyCookie(kv[0], kv[1]);
+-                    }
++                if (kv.length != 2) continue;
++                if (!kv[1].equals(cookiesMap.put(kv[0], kv[1]))) {
++                    LogUtility.d("Processing cookie: " + kv[0] + "=" + kv[1]);
++                    manager.applyCookie(kv[0], kv[1]);
+                 }
+             }
+-        } while (!this.manager.endInterceptor());
+-        web.post(() -> web.setVisibility(View.GONE));
+-    }
++        }
+ 
+-    public void intercept() {
+-        while(!manager.endInterceptor()){
+-            while (intercepting) {
+-                Utility.threadSleep(100);
+-            }
+-            intercepting = true;
+-            synchronized (CookieInterceptor.class) {
+-                if (!manager.endInterceptor()) {
+-                    interceptInternal();
+-                }
+-            }
+-            intercepting = false;
++        if (!manager.endInterceptor()) {
++            // Kick the UI flow if possible, but do not wait for it.
++            maybeStartCloudflareFlow();
++            throw new IOException("Cloudflare challenge required (missing cookies/token).");
+         }
+-        this.manager.onFinish();
++        CFTokenView tokenView = GeneralActivity.getLastCFView();
++        if (tokenView != null) tokenView.post(() -> tokenView.setVisibility(View.GONE));
++        manager.onFinish();
+     }
+ 
+     public interface Manager {
+diff --git a/app/src/main/java/com/maxwai/nclientv3/components/activities/CrashApplication.java b/app/src/main/java/com/maxwai/nclientv3/components/activities/CrashApplication.java
+index c3dbac9..86a0b67 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/components/activities/CrashApplication.java
++++ b/app/src/main/java/com/maxwai/nclientv3/components/activities/CrashApplication.java
+@@ -6,6 +6,7 @@ import android.content.Context;
+ import android.content.SharedPreferences;
+ import android.os.Build;
+ import android.os.Bundle;
++import android.os.Environment;
+ import android.view.View;
+ 
+ import androidx.annotation.DeprecatedSinceApi;
+@@ -23,7 +24,12 @@ import com.maxwai.nclientv3.async.downloader.DownloadGalleryV2;
+ import com.maxwai.nclientv3.settings.Database;
+ import com.maxwai.nclientv3.settings.Global;
+ import com.maxwai.nclientv3.settings.TagV2;
++import com.maxwai.nclientv3.utility.AppExecutors;
++import com.maxwai.nclientv3.utility.LogUtility;
+ import com.maxwai.nclientv3.utility.network.NetworkUtil;
++import com.maxwai.nclientv3.BuildConfig;
++
++import java.io.File;
+ 
+ public class CrashApplication extends Application {
+ 
+@@ -42,8 +48,8 @@ public class CrashApplication extends Application {
+     @Override
+     public void onCreate() {
+         super.onCreate();
++        LogUtility.i("BOOT_MARKER theme-compat-2026-01-18b", "pkg=", getPackageName(), "vc=", BuildConfig.VERSION_CODE, "vn=", BuildConfig.VERSION_NAME, "debug=", BuildConfig.DEBUG);
+         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+-        Global.initStorage(this);
+         //noinspection resource
+         Database.setDatabase(new DatabaseHelper(getApplicationContext()).getWritableDatabase());
+         String version = Global.getLastVersion(this);
+@@ -56,7 +62,14 @@ public class CrashApplication extends Application {
+         NetworkUtil.initConnectivity(this);
+         TagV2.initMinCount(this);
+         TagV2.initSortByName(this);
+-        DownloadGalleryV2.loadDownloads(this);
++        // Avoid disk/DB work on the main thread during cold start.
++        AppExecutors.io().execute(() -> {
++            try {
++                DownloadGalleryV2.loadDownloads(this);
++            } catch (Throwable t) {
++                LogUtility.e("Error loading downloads on startup", t);
++            }
++        });
+         registerActivityLifecycleCallbacks(new CustomActivityLifecycleCallback());
+         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+             String theme = preferences.getString(getString(R.string.preference_key_theme_select), "");
+@@ -76,9 +89,38 @@ public class CrashApplication extends Application {
+ 
+     private void removeOldUpdates() {
+         if (!Global.hasStoragePermission(this)) return;
+-        Global.recursiveDelete(Global.UPDATEFOLDER);
+-        //noinspection ResultOfMethodCallIgnored
+-        Global.UPDATEFOLDER.mkdir();
++        AppExecutors.io().execute(() -> {
++            try {
++                // Global.UPDATEFOLDER can be null before Global.initStorage()/initFilesTree runs (race on real devices).
++                File updateFolder = Global.UPDATEFOLDER;
++                if (updateFolder == null) {
++                    updateFolder = resolveUpdateFolderFallback();
++                    LogUtility.w("Global.UPDATEFOLDER was null; using fallback path: ", updateFolder);
++                }
++                if (updateFolder == null) {
++                    LogUtility.w("Unable to resolve update folder; skipping cleanup.");
++                    return;
++                }
++
++                Global.recursiveDelete(updateFolder);
++                if (!updateFolder.exists() && !updateFolder.mkdirs()) {
++                    LogUtility.w("Unable to recreate update folder after cleanup: ", updateFolder);
++                }
++            } catch (Throwable t) {
++                // Never crash the process from background cleanup work.
++                LogUtility.e("Error cleaning update folder", t);
++            }
++        });
++    }
++
++    @Nullable
++    private File resolveUpdateFolderFallback() {
++        File base = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
++        if (base == null) base = getExternalFilesDir(null);
++        if (base == null) base = getFilesDir();
++        if (base == null) base = getCacheDir();
++        if (base == null) return null;
++        return new File(new File(base, "NClientV3"), "Update");
+     }
+ 
+     private static class CustomActivityLifecycleCallback implements ActivityLifecycleCallbacks {
+diff --git a/app/src/main/java/com/maxwai/nclientv3/components/activities/GeneralActivity.java b/app/src/main/java/com/maxwai/nclientv3/components/activities/GeneralActivity.java
+index 2ffab3e..4b6096d 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/components/activities/GeneralActivity.java
++++ b/app/src/main/java/com/maxwai/nclientv3/components/activities/GeneralActivity.java
+@@ -2,7 +2,14 @@ package com.maxwai.nclientv3.components.activities;
+ 
+ import android.content.SharedPreferences;
+ import android.content.res.Resources;
++import android.content.res.Configuration;
++import android.content.pm.ActivityInfo;
++import android.content.pm.ApplicationInfo;
++import android.content.pm.PackageInfo;
++import android.content.pm.PackageManager;
++import android.os.Build;
+ import android.os.Bundle;
++import android.util.TypedValue;
+ import android.view.LayoutInflater;
+ import android.view.View;
+ import android.view.ViewGroup;
+@@ -10,11 +17,14 @@ import android.view.WindowManager;
+ import android.widget.Toast;
+ 
+ import androidx.annotation.Nullable;
++import androidx.annotation.NonNull;
+ import androidx.appcompat.app.AppCompatActivity;
+ 
+ import com.maxwai.nclientv3.R;
++import com.maxwai.nclientv3.BuildConfig;
+ import com.maxwai.nclientv3.components.views.CFTokenView;
+ import com.maxwai.nclientv3.settings.Global;
++import com.maxwai.nclientv3.utility.LogUtility;
+ 
+ import java.lang.ref.WeakReference;
+ 
+@@ -57,6 +67,21 @@ public abstract class GeneralActivity extends AppCompatActivity {
+     protected void onCreate(@Nullable Bundle savedInstanceState) {
+         super.onCreate(savedInstanceState);
+         Global.initActivity(this);
++        if (BuildConfig.DEBUG) logThemeDiagnostics("onCreate");
++    }
++
++    @Override
++    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
++        super.onPostCreate(savedInstanceState);
++        // Defense-in-depth against OEM "Darken apps" that may ignore android:forceDarkAllowed.
++        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
++            try {
++                getWindow().getDecorView().setForceDarkAllowed(false);
++            } catch (Throwable t) {
++                LogUtility.w("Unable to disable force dark on decor view", t);
++            }
++        }
++        if (BuildConfig.DEBUG) logThemeDiagnostics("onPostCreate");
+     }
+ 
+     @Override
+@@ -64,6 +89,7 @@ public abstract class GeneralActivity extends AppCompatActivity {
+         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+         super.onResume();
+         lastActivity = new WeakReference<>(this);
++        if (BuildConfig.DEBUG) logThemeDiagnostics("onResume");
+         if (!isFastScrollerApplied) {
+             isFastScrollerApplied = true;
+             Global.applyFastScroller(findViewById(R.id.recycler));
+@@ -79,4 +105,57 @@ public abstract class GeneralActivity extends AppCompatActivity {
+         }
+         return theme;
+     }
++
++    private void logThemeDiagnostics(@NonNull String phase) {
++        try {
++            SharedPreferences preferences = getSharedPreferences("Settings", 0);
++            boolean blackTheme = preferences.getBoolean(getString(R.string.preference_key_black_theme), false);
++            int night = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
++            Integer background = resolveThemeColor(android.R.attr.colorBackground);
++            Integer surface = resolveThemeColor(com.google.android.material.R.attr.colorSurface);
++            Integer onSurface = resolveThemeColor(com.google.android.material.R.attr.colorOnSurface);
++            Integer primary = resolveThemeColor(androidx.appcompat.R.attr.colorPrimary);
++            Integer onPrimary = resolveThemeColor(com.google.android.material.R.attr.colorOnPrimary);
++
++            int activityTheme = 0;
++            int appTheme = 0;
++            try {
++                PackageManager pm = getPackageManager();
++                ActivityInfo ai = pm.getActivityInfo(getComponentName(), 0);
++                ApplicationInfo appInfo = pm.getApplicationInfo(getPackageName(), 0);
++                activityTheme = ai.theme;
++                appTheme = appInfo.theme;
++            } catch (Exception ignored) {
++            }
++
++            LogUtility.i(
++                "ThemeDiagnostics",
++                "phase=", phase,
++                "night=", night,
++                "blackTheme=", blackTheme,
++                "activityThemeRes=", activityTheme,
++                "appThemeRes=", appTheme,
++                "colorBackground=", background,
++                "colorSurface=", surface,
++                "colorOnSurface=", onSurface,
++                "colorPrimary=", primary,
++                "colorOnPrimary=", onPrimary
++            );
++
++            try {
++                PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
++                LogUtility.i("ThemeDiagnostics", "versionName=", pInfo.versionName, "versionCode=", pInfo.getLongVersionCode(), "debug=", BuildConfig.DEBUG);
++            } catch (Exception ignored) {
++            }
++        } catch (Throwable t) {
++            LogUtility.w("ThemeDiagnostics failed", t);
++        }
++    }
++
++    @Nullable
++    private Integer resolveThemeColor(int attr) {
++        TypedValue out = new TypedValue();
++        if (!getTheme().resolveAttribute(attr, out, true)) return null;
++        return out.type >= TypedValue.TYPE_FIRST_COLOR_INT && out.type <= TypedValue.TYPE_LAST_COLOR_INT ? out.data : null;
++    }
+ }
+diff --git a/app/src/main/java/com/maxwai/nclientv3/components/views/ZoomFragment.java b/app/src/main/java/com/maxwai/nclientv3/components/views/ZoomFragment.java
+index 8146f97..0926fad 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/components/views/ZoomFragment.java
++++ b/app/src/main/java/com/maxwai/nclientv3/components/views/ZoomFragment.java
+@@ -1,12 +1,11 @@
+ package com.maxwai.nclientv3.components.views;
+ 
+-import static com.bumptech.glide.request.target.Target.SIZE_ORIGINAL;
+-
+ import android.graphics.drawable.Animatable;
+ import android.graphics.drawable.Drawable;
+ import android.net.Uri;
+ import android.os.Build;
+ import android.os.Bundle;
++import android.os.Looper;
+ import android.view.LayoutInflater;
+ import android.view.View;
+ import android.view.ViewGroup;
+@@ -23,6 +22,7 @@ import com.bumptech.glide.RequestBuilder;
+ import com.bumptech.glide.RequestManager;
+ import com.bumptech.glide.load.DataSource;
+ import com.bumptech.glide.load.engine.GlideException;
++import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy;
+ import com.bumptech.glide.load.resource.bitmap.Rotate;
+ import com.bumptech.glide.load.resource.gif.GifDrawable;
+ import com.bumptech.glide.request.RequestListener;
+@@ -49,6 +49,8 @@ public class ZoomFragment extends Fragment {
+ 
+     private static final float MAX_SCALE = 8f;
+     private static final float CHANGE_PAGE_THRESHOLD = .2f;
++    // Cap decoded pixel count per page to avoid OOMs when users zoom; 8MP ~= 32MB in ARGB_8888.
++    private static final long MAX_DECODE_PIXELS = 8_000_000L;
+     private PhotoView photoView = null;
+     private ImageButton retryButton;
+     private PageFile pageFile = null;
+@@ -58,6 +60,13 @@ public class ZoomFragment extends Fragment {
+     private View.OnClickListener clickListener;
+     private OnZoomChangeListener zoomChangeListener;
+     private ImageViewTarget<Drawable> target = null;
++    private int originalW = 0;
++    private int originalH = 0;
++    private int lastRequestedW = 0;
++    private int lastRequestedH = 0;
++    private int lastRequestedDegree = 0;
++    private int lastQualityLevel = 0;
++    private int requestedQualityLevel = 0;
+ 
+ 
+     public ZoomFragment() {
+@@ -67,6 +76,12 @@ public class ZoomFragment extends Fragment {
+         Bundle args = new Bundle();
+         args.putString("URL", gallery.isLocal() ? null : ((Gallery) gallery).getPageUrl(page).toString());
+         args.putParcelable("FOLDER", directory == null ? null : directory.getPage(page + 1));
++        try {
++            // Preserve zoom behavior when downsampling: use original page dimensions for scale decisions.
++            args.putInt("PAGE_W", gallery.getGalleryData().getPage(page).getSize().getWidth());
++            args.putInt("PAGE_H", gallery.getGalleryData().getPage(page).getSize().getHeight());
++        } catch (Exception ignore) {
++        }
+         ZoomFragment fragment = new ZoomFragment();
+         fragment.setArguments(args);
+         return fragment;
+@@ -111,6 +126,8 @@ public class ZoomFragment extends Fragment {
+         } else {
+             pageFile = getArguments().getParcelable("FOLDER");
+         }
++        originalW = getArguments().getInt("PAGE_W", 0);
++        originalH = getArguments().getInt("PAGE_H", 0);
+         photoView.setAllowParentInterceptOnEdge(true);
+         photoView.setOnPhotoTapListener((view, x, y) -> {
+             boolean prev = x < CHANGE_PAGE_THRESHOLD;
+@@ -123,11 +140,12 @@ public class ZoomFragment extends Fragment {
+             LogUtility.d(view, x, y, prev, next);
+         });
+ 
+-        photoView.setOnScaleChangeListener((float scaleFactor, float focusX, float focusY)->{
+-            if(this.zoomChangeListener!=null) {
++        photoView.setOnScaleChangeListener((float scaleFactor, float focusX, float focusY) -> {
++            if (this.zoomChangeListener != null) {
+                 this.zoomChangeListener.onZoomChange(rootView, photoView.getScale());
+             }
+-            });
++            maybeUpgradeDecodeForZoom(photoView.getScale());
++        });
+ 
+         photoView.setMaximumScale(MAX_SCALE);
+         retryButton.setOnClickListener(v -> loadImage());
+@@ -180,10 +198,9 @@ public class ZoomFragment extends Fragment {
+     }
+ 
+     private void scalePhoto(Drawable drawable) {
+-        photoView.setScale(calculateScaleFactor(
+-            drawable.getIntrinsicWidth(),
+-            drawable.getIntrinsicHeight()
+-        ), 0, 0, false);
++        int w = originalW > 0 ? originalW : drawable.getIntrinsicWidth();
++        int h = originalH > 0 ? originalH : drawable.getIntrinsicHeight();
++        photoView.setScale(calculateScaleFactor(w, h), 0, 0, false);
+     }
+ 
+     public void loadImage() {
+@@ -191,19 +208,37 @@ public class ZoomFragment extends Fragment {
+     }
+ 
+     public void loadImage(Priority priority) {
+-        if (completedDownload) return;
++        if (photoView == null) return;
++        int qualityLevel = requestedQualityLevel > 0 ? requestedQualityLevel : qualityLevelForScale(estimateInitialScale());
++        int[] decodeSize = computeDecodeSizePx(qualityScaleForLevel(qualityLevel));
++        if (completedDownload
++            && lastRequestedDegree == degree
++            && lastRequestedW == decodeSize[0]
++            && lastRequestedH == decodeSize[1]) {
++            return;
++        }
+         cancelRequest();
+         RequestBuilder<Drawable> dra = loadPage();
+         if (dra == null) return;
++        completedDownload = false;
++        lastRequestedDegree = degree;
++        lastRequestedW = decodeSize[0];
++        lastRequestedH = decodeSize[1];
++        lastQualityLevel = qualityLevel;
++        requestedQualityLevel = qualityLevel;
+         dra
+             .transform(new Rotate(degree))
+-            .apply(new RequestOptions().fitCenter())
++            .apply(new RequestOptions()
++                .fitCenter()
++                .downsample(DownsampleStrategy.AT_MOST)
++                .override(decodeSize[0], decodeSize[1]))
+             .placeholder(R.drawable.ic_launcher_foreground)
+             .error(R.drawable.ic_refresh)
+             .priority(priority)
+             .addListener(new RequestListener<>() {
+                 @Override
+                 public boolean onLoadFailed(@Nullable GlideException e, Object model, @NonNull Target<Drawable> target, boolean isFirstResource) {
++                    completedDownload = false;
+                     return false;
+                 }
+ 
+@@ -213,7 +248,7 @@ public class ZoomFragment extends Fragment {
+                     return false;
+                 }
+             })
+-            .into(target);
++            .into(this.target);
+     }
+ 
+     @Nullable
+@@ -231,7 +266,7 @@ public class ZoomFragment extends Fragment {
+                 request = glide.load(url);
+             }
+         }
+-        return request.override(SIZE_ORIGINAL);
++        return request;
+     }
+ 
+     public Drawable getDrawable() {
+@@ -239,10 +274,11 @@ public class ZoomFragment extends Fragment {
+     }
+ 
+     public void cancelRequest() {
+-        if (completedDownload) return;
+         if (photoView != null && target != null) {
+             RequestManager manager = GlideX.with(photoView);
+             if (manager != null) manager.clear(target);
++            // Allow re-requesting if the page becomes visible again; also releases decoded bitmaps for far pages.
++            completedDownload = false;
+         }
+     }
+ 
+@@ -254,4 +290,85 @@ public class ZoomFragment extends Fragment {
+     public void rotate() {
+         updateDegree();
+     }
++
++    @Override
++    public void onDestroyView() {
++        cancelRequest();
++        if (photoView != null) photoView.setImageDrawable(null);
++        target = null;
++        photoView = null;
++        retryButton = null;
++        super.onDestroyView();
++    }
++
++    private float estimateInitialScale() {
++        if (originalW > 0 && originalH > 0) {
++            return calculateScaleFactor(originalW, originalH);
++        }
++        return 1f;
++    }
++
++    private void maybeUpgradeDecodeForZoom(float currentScale) {
++        // Only upgrade on a "significant" zoom to avoid repeated reloads while pinching.
++        int desiredLevel = qualityLevelForScale(currentScale);
++        if (desiredLevel <= lastQualityLevel) return;
++        if (!isAdded() || photoView == null) return;
++        // Avoid doing Glide work off the main thread.
++        if (!Looper.getMainLooper().isCurrentThread()) return;
++        int[] decodeSize = computeDecodeSizePx(qualityScaleForLevel(desiredLevel));
++        if (decodeSize[0] == lastRequestedW && decodeSize[1] == lastRequestedH && lastRequestedDegree == degree) {
++            lastQualityLevel = desiredLevel;
++            return;
++        }
++        requestedQualityLevel = desiredLevel;
++        // Force a reload with a larger decode target; only 1 bitmap is retained per fragment.
++        loadImage(Priority.IMMEDIATE);
++    }
++
++    private static int qualityLevelForScale(float scale) {
++        if (scale >= 3.0f) return 3;
++        if (scale >= 2.0f) return 2;
++        return 1;
++    }
++
++    private static float qualityScaleForLevel(int level) {
++        switch (level) {
++            case 3:
++                return 2.5f;
++            case 2:
++                return 1.75f;
++            default:
++                return 1.0f;
++        }
++    }
++
++    private int[] computeDecodeSizePx(float qualityScale) {
++        FragmentActivity activity = getActivity();
++        int viewportW = photoView != null ? photoView.getWidth() : 0;
++        int viewportH = photoView != null ? photoView.getHeight() : 0;
++        if (viewportW <= 0) viewportW = Global.getDeviceWidth(activity);
++        if (viewportH <= 0) viewportH = Global.getDeviceHeight(activity);
++
++        int targetW;
++        int targetH;
++        if (originalW > 0 && originalH > 0) {
++            float fitScale = Math.min((viewportW * qualityScale) / (float) originalW, (viewportH * qualityScale) / (float) originalH);
++            fitScale = Math.max(0.01f, fitScale);
++            targetW = Math.max(1, (int) Math.ceil(originalW * fitScale));
++            targetH = Math.max(1, (int) Math.ceil(originalH * fitScale));
++            targetW = Math.min(targetW, originalW);
++            targetH = Math.min(targetH, originalH);
++        } else {
++            targetW = Math.max(1, Math.round(viewportW * qualityScale));
++            targetH = Math.max(1, Math.round(viewportH * qualityScale));
++        }
++
++        long pixels = (long) targetW * (long) targetH;
++        if (pixels > MAX_DECODE_PIXELS) {
++            double shrink = Math.sqrt((double) MAX_DECODE_PIXELS / (double) pixels);
++            targetW = Math.max(1, (int) Math.floor(targetW * shrink));
++            targetH = Math.max(1, (int) Math.floor(targetH * shrink));
++        }
++        return new int[]{targetW, targetH};
++    }
+ }
+diff --git a/app/src/main/java/com/maxwai/nclientv3/files/GalleryFolder.java b/app/src/main/java/com/maxwai/nclientv3/files/GalleryFolder.java
+index 36dd156..f3e4809 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/files/GalleryFolder.java
++++ b/app/src/main/java/com/maxwai/nclientv3/files/GalleryFolder.java
+@@ -36,12 +36,14 @@ public class GalleryFolder implements Parcelable, Iterable<PageFile> {
+     private static final Pattern FILE_PATTERN = Pattern.compile("^0*(\\d{1,9})\\.(gif|png|jpg|webp)$", Pattern.CASE_INSENSITIVE);
+     private static final Pattern IDFILE_PATTERN = Pattern.compile("^\\.(\\d{1,6})$");
+     private static final String NOMEDIA_FILE = ".nomedia";
++    private static final String GALLERY_DATA_FILE = ".gallery.json";
+     private final SparseArrayCompat<PageFile> pageArray = new SparseArrayCompat<>();
+     private final File folder;
+     private int id = SpecialTagIds.INVALID_ID;
+     private int max = -1;
+     private int min = Integer.MAX_VALUE;
+     private File nomedia;
++    private File galleryDataFile;
+ 
+     public GalleryFolder(@NonNull String child) {
+         this(Global.DOWNLOADFOLDER, child);
+@@ -105,6 +107,7 @@ public class GalleryFolder implements Parcelable, Iterable<PageFile> {
+         }
+ 
+         if (nomedia == null && name.equals(NOMEDIA_FILE)) nomedia = f;
++        if (galleryDataFile == null && name.equals(GALLERY_DATA_FILE)) galleryDataFile = f;
+     }
+ 
+     private int elaborateId(Matcher matcher) {
+@@ -116,7 +119,7 @@ public class GalleryFolder implements Parcelable, Iterable<PageFile> {
+     }
+ 
+     public File getGalleryDataFile() {
+-        return nomedia;
++        return galleryDataFile != null ? galleryDataFile : nomedia;
+     }
+ 
+     public File getFolder() {
+diff --git a/app/src/main/java/com/maxwai/nclientv3/settings/CustomInterceptor.java b/app/src/main/java/com/maxwai/nclientv3/settings/CustomInterceptor.java
+index 95700c1..73edbd4 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/settings/CustomInterceptor.java
++++ b/app/src/main/java/com/maxwai/nclientv3/settings/CustomInterceptor.java
+@@ -71,8 +71,15 @@ public class CustomInterceptor implements Interceptor {
+             CookieManager.getInstance().removeAllCookies(null);
+ 
+             CookieInterceptor interceptor = new CookieInterceptor(MANAGER);
+-            interceptor.intercept();
++            try {
++                interceptor.intercept();
++            } catch (IOException e) {
++                // Fail fast: the UI layer can reuse the existing Cloudflare/WebView flow triggered by CookieInterceptor.
++                response.close();
++                throw e;
++            }
+             if (context != null) Global.reloadHttpClient(context);
++            response.close();
+             response = Global.client.newCall(request.newBuilder().addHeader("rec", "1").build()).execute();
+         }
+         return response;
+diff --git a/app/src/main/java/com/maxwai/nclientv3/settings/Global.java b/app/src/main/java/com/maxwai/nclientv3/settings/Global.java
+index a986e53..f1fd4dd 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/settings/Global.java
++++ b/app/src/main/java/com/maxwai/nclientv3/settings/Global.java
+@@ -35,6 +35,7 @@ import com.maxwai.nclientv3.api.local.LocalSortType;
+ import com.maxwai.nclientv3.components.CustomCookieJar;
+ import com.maxwai.nclientv3.utility.LogUtility;
+ import com.maxwai.nclientv3.utility.Utility;
++import com.maxwai.nclientv3.utility.AppExecutors;
+ import com.maxwai.nclientv3.utility.network.NetworkUtil;
+ import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
+ import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
+@@ -46,6 +47,7 @@ import java.util.ArrayList;
+ import java.util.Arrays;
+ import java.util.List;
+ import java.util.Objects;
++import java.util.concurrent.TimeUnit;
+ 
+ import me.zhanghai.android.fastscroll.FastScrollerBuilder;
+ import okhttp3.Cookie;
+@@ -154,7 +156,7 @@ public class Global {
+     @Nullable
+     public static String getDefaultFileParent(Context context) {
+         File f;
+-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
++        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+             f = context.getExternalFilesDir(null);
+         } else {
+             f = Environment.getExternalStorageDirectory();
+@@ -166,9 +168,14 @@ public class Global {
+         List<File> files = getUsableFolders(context);
+         String path = context.getSharedPreferences("Settings", Context.MODE_PRIVATE).getString(context.getString(R.string.preference_key_save_path), Objects.requireNonNull(getDefaultFileParent(context)));
+         File ROOTFOLDER = new File(path);
+-        //in case the permission is removed
+-        if (!files.contains(ROOTFOLDER) && !isExternalStorageManager())
+-            ROOTFOLDER = new File(Objects.requireNonNull(getDefaultFileParent(context)));
++        // On Android 10+ (scoped storage), only allow app-scoped folders unless the user has All Files Access (R+).
++        // (On pre-Android 10, legacy external storage access is handled by WRITE_EXTERNAL_STORAGE.)
++        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
++            boolean hasAllFilesAccess = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager();
++            if (!files.contains(ROOTFOLDER) && !hasAllFilesAccess) {
++                ROOTFOLDER = new File(Objects.requireNonNull(getDefaultFileParent(context)));
++            }
++        }
+         MAINFOLDER = new File(ROOTFOLDER, MAINFOLDER_NAME);
+         LogUtility.d(MAINFOLDER);
+         DOWNLOADFOLDER = new File(MAINFOLDER, DOWNLOADFOLDER_NAME);
+@@ -257,11 +264,30 @@ public class Global {
+     public static void initFromShared(@NonNull Context context) {
+         Login.initLogin(context);
+         SharedPreferences shared = context.getSharedPreferences("Settings", 0);
++        // Keep theme_select and legacy black_theme flag consistent (older installs can get out of sync).
++        try {
++            String theme = shared.getString(context.getString(R.string.preference_key_theme_select), "dark");
++            boolean shouldBeBlack = "black".equals(theme);
++            boolean isBlack = shared.getBoolean(context.getString(R.string.preference_key_black_theme), false);
++            if (isBlack != shouldBeBlack) {
++                shared.edit().putBoolean(context.getString(R.string.preference_key_black_theme), shouldBeBlack).apply();
++                LogUtility.w("Fixing theme prefs mismatch: theme_select=", theme, " black_theme(old)=", isBlack, " black_theme(new)=", shouldBeBlack);
++            }
++        } catch (Throwable t) {
++            LogUtility.w("Unable to validate theme prefs", t);
++        }
+         initHttpClient(context);
+         initTitleType(context);
+         loadNotificationChannel(context);
+         NotificationSettings.initializeNotificationManager(context);
+-        Global.initStorage(context);
++        // Startup/refresh: avoid blocking the UI thread with filesystem work.
++        AppExecutors.io().execute(() -> {
++            try {
++                Global.initStorage(context);
++            } catch (Throwable t) {
++                LogUtility.e("Error initializing storage", t);
++            }
++        });
+         shared.edit().remove("local_sort").apply();
+         localSortType = new LocalSortType(shared.getInt(context.getString(R.string.key_local_sort), 0));
+         useRtl = shared.getBoolean(context.getString(R.string.preference_key_use_rtl), false);
+@@ -280,7 +306,10 @@ public class Global {
+         infiniteScrollFavorite = shared.getBoolean(context.getString(R.string.key_infinite_scroll_favo), false);
+         infiniteScrollMain = shared.getBoolean(context.getString(R.string.key_infinite_scroll_main), false);
+         maxId = shared.getInt(context.getString(R.string.key_max_id), 300000);
+-        offscreenLimit = Math.max(1, shared.getInt(context.getString(R.string.preference_key_offscreen_limit), 5));
++        // Reader memory safety: keep ViewPager2 retention low by default, and cap it to avoid OOMs.
++        // Neighbor preloading is also capped separately in ZoomActivity.
++        int prefOffscreen = shared.getInt(context.getString(R.string.preference_key_offscreen_limit), 1);
++        offscreenLimit = Math.max(1, Math.min(2, prefOffscreen));
+         maxHistory = shared.getInt(context.getString(R.string.preference_key_max_history_size), 2);
+         defaultZoom = shared.getInt(context.getString(R.string.preference_key_default_zoom), 100);
+         colPortMain = shared.getInt(context.getString(R.string.key_column_port_main), 2);
+@@ -350,6 +379,9 @@ public class Global {
+     public static void reloadHttpClient(@NonNull Context context) {
+         SharedPreferences preferences = context.getSharedPreferences("Login", 0);
+         OkHttpClient.Builder builder = new OkHttpClient.Builder()
++            .connectTimeout(10, TimeUnit.SECONDS)
++            .readTimeout(10, TimeUnit.SECONDS)
++            .writeTimeout(10, TimeUnit.SECONDS)
+             .cookieJar(
+                 new CustomCookieJar(
+                     new SetCookieCache(),
+@@ -556,7 +588,7 @@ public class Global {
+ 
+     public static List<File> getUsableFolders(Context context) {
+         List<File> strings = new ArrayList<>(3);
+-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
++        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q)
+             strings.add(Environment.getExternalStorageDirectory());
+ 
+         File[] files = context.getExternalFilesDirs(null);
+@@ -565,11 +597,11 @@ public class Global {
+     }
+ 
+     public static boolean hasStoragePermission(Context context) {
+-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+-            return true; //We don't check permission on Android 13
+-        } else {
+-            return ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
++        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
++            // App-scoped external storage is available without runtime permissions.
++            return context.getExternalFilesDir(null) != null;
+         }
++        return ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+     }
+ 
+     public static boolean isJPEGCorrupted(String path) {
+diff --git a/app/src/main/java/com/maxwai/nclientv3/settings/NotificationSettings.java b/app/src/main/java/com/maxwai/nclientv3/settings/NotificationSettings.java
+index d2952fb..a7dcaf6 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/settings/NotificationSettings.java
++++ b/app/src/main/java/com/maxwai/nclientv3/settings/NotificationSettings.java
+@@ -1,9 +1,11 @@
+ package com.maxwai.nclientv3.settings;
+ 
+ import android.Manifest;
++import android.app.Activity;
+ import android.app.Notification;
+ import android.content.Context;
+ import android.content.pm.PackageManager;
++import android.os.Build;
+ 
+ import androidx.core.app.ActivityCompat;
+ import androidx.core.app.NotificationManagerCompat;
+@@ -19,6 +21,7 @@ public class NotificationSettings {
+     private static final List<Integer> notificationArray = new CopyOnWriteArrayList<>();
+     private static NotificationSettings notificationSettings;
+     private static int notificationId = 999, maximumNotification;
++    public static final int REQUEST_CODE_POST_NOTIFICATIONS = 2001;
+     private final NotificationManagerCompat notificationManager;
+ 
+     private NotificationSettings(NotificationManagerCompat notificationManager) {
+@@ -35,6 +38,21 @@ public class NotificationSettings {
+         trimArray();
+     }
+ 
++    public static boolean requestPostNotificationsIfNeeded(Context context) {
++        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true;
++        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
++            return true;
++        }
++        if (context instanceof Activity) {
++            ActivityCompat.requestPermissions(
++                (Activity) context,
++                new String[]{Manifest.permission.POST_NOTIFICATIONS},
++                REQUEST_CODE_POST_NOTIFICATIONS
++            );
++        }
++        return false;
++    }
++
+     public static void notify(Context context, int notificationId, Notification notification) {
+         if (maximumNotification == 0) return;
+         notificationArray.remove(Integer.valueOf(notificationId));
+@@ -42,13 +60,6 @@ public class NotificationSettings {
+         trimArray();
+         LogUtility.d("Notification count: " + notificationArray.size());
+         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+-            // TODO: Consider calling
+-            //    ActivityCompat#requestPermissions
+-            // here to request the missing permissions, and then overriding
+-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+-            //                                          int[] grantResults)
+-            // to handle the case where the user grants the permission. See the documentation
+-            // for ActivityCompat#requestPermissions for more details.
+             return;
+         }
+         notificationSettings.notificationManager.notify(notificationId, notification);
+diff --git a/app/src/main/java/com/maxwai/nclientv3/utility/AppExecutors.java b/app/src/main/java/com/maxwai/nclientv3/utility/AppExecutors.java
+new file mode 100644
+index 0000000..850d097
+--- /dev/null
++++ b/app/src/main/java/com/maxwai/nclientv3/utility/AppExecutors.java
+@@ -0,0 +1,49 @@
++package com.maxwai.nclientv3.utility;
++
++import android.content.Context;
++
++import androidx.annotation.NonNull;
++import androidx.core.content.ContextCompat;
++
++import java.util.concurrent.Executor;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++import java.util.concurrent.ThreadFactory;
++import java.util.concurrent.atomic.AtomicInteger;
++
++/**
++ * Centralized executors for offloading disk/network work from the main thread.
++ */
++public final class AppExecutors {
++    private static final ExecutorService IO = Executors.newFixedThreadPool(2, new NamedThreadFactory("io"));
++
++    private AppExecutors() {
++    }
++
++    @NonNull
++    public static ExecutorService io() {
++        return IO;
++    }
++
++    @NonNull
++    public static Executor main(@NonNull Context context) {
++        return ContextCompat.getMainExecutor(context.getApplicationContext());
++    }
++
++    private static final class NamedThreadFactory implements ThreadFactory {
++        private final String prefix;
++        private final AtomicInteger nextId = new AtomicInteger(1);
++
++        private NamedThreadFactory(String prefix) {
++            this.prefix = prefix;
++        }
++
++        @Override
++        public Thread newThread(@NonNull Runnable r) {
++            Thread t = new Thread(r);
++            t.setName("NClientV3-" + prefix + "-" + nextId.getAndIncrement());
++            t.setDaemon(true);
++            return t;
++        }
++    }
++}
+diff --git a/app/src/main/java/com/maxwai/nclientv3/utility/Utility.java b/app/src/main/java/com/maxwai/nclientv3/utility/Utility.java
+index 28f2082..e7ae26a 100644
+--- a/app/src/main/java/com/maxwai/nclientv3/utility/Utility.java
++++ b/app/src/main/java/com/maxwai/nclientv3/utility/Utility.java
+@@ -112,6 +112,16 @@ public class Utility {
+         if (b != null) saveImage(b, output);
+     }
+ 
++    /**
++     * Offloads bitmap compression + file writes to a background thread to avoid UI stalls/ANRs.
++     * The drawable-to-bitmap cast is performed on the caller thread (cheap), while compression happens on IO.
++     */
++    public static void saveImageAsync(@NonNull Context context, @Nullable Drawable drawable, @NonNull File output) {
++        Bitmap b = drawable == null ? null : drawableToBitmap(drawable);
++        if (b == null) return;
++        AppExecutors.io().execute(() -> saveImage(b, output));
++    }
++
+     private static void saveImage(@NonNull Bitmap bitmap, @NonNull File output) {
+         try {
+             if (!output.exists())
+@@ -144,7 +154,7 @@ public class Utility {
+     public static void sendImage(Context context, Drawable drawable, String text) {
+         context = context.getApplicationContext();
+         try {
+-            File tempFile = File.createTempFile("toSend", ".jpg");
++            File tempFile = File.createTempFile("toSend", ".jpg", context.getCacheDir());
+             tempFile.deleteOnExit();
+             Bitmap image = drawableToBitmap(drawable);
+             if (image == null) return;
+diff --git a/app/src/main/res/values-ar-rSA/strings.xml b/app/src/main/res/values-ar-rSA/strings.xml
+index 27e84ca..956ab37 100644
+--- a/app/src/main/res/values-ar-rSA/strings.xml
++++ b/app/src/main/res/values-ar-rSA/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">عمل عشوائي</string>
+     <string name="save_page">اِحفظ الصفحة</string>
+     <string name="page_count_format" formatted="true">%d صفحةً(صفحاتٍ)</string>
+-    <string name="upload_date_format" formatted="true">رُفِع بتاريخ %s عند الـ %s</string>
++    <string name="upload_date_format" formatted="true">رُفِع بتاريخ %1$s عند الـ %2$s</string>
+     <string name="favorite_count_format" formatted="true">مُفضَّل عند %d أشخاص(شخصًا)</string>
+     <string name="favorite_manga">الأعمال المُفضَّلة</string>
+     <string name="setting_on_remove_ignored">الأعمال ذات الوسوم المُتجاهَلة لن تُعرض</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">لا يوجد تحديث مُتوفِّر</string>
+     <string name="error_retrieving">طرأ خطأٌ أثناء استرجاع الإصدار الأخير</string>
+     <string name="new_version_found">وُجد إصدار جديد</string>
+-    <string name="update_version_format" formatted="true">أتود التحديث من الإصدار %s إلى الإصدار %s ؟\n\n سِجل التغييرات: \n%s</string>
++    <string name="update_version_format" formatted="true">أتود التحديث من الإصدار %1$s إلى الإصدار %2$s ؟\n\n سِجل التغييرات: \n%3$s</string>
+     <string name="clear_this_list">أتود محو هذه القائمة؟</string>
+     <string name="set_minimum_count">عيِّن حدًّا أدنى للعدِّ</string>
+     <string name="sort_by_title">ِاِفرِز حسب العنوان</string>
+diff --git a/app/src/main/res/values-de-rDE/strings.xml b/app/src/main/res/values-de-rDE/strings.xml
+index 7363fb3..90c3765 100644
+--- a/app/src/main/res/values-de-rDE/strings.xml
++++ b/app/src/main/res/values-de-rDE/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">Zufallsgalerie</string>
+     <string name="save_page">Seite speichern</string>
+     <string name="page_count_format" formatted="true">%d Seiten</string>
+-    <string name="upload_date_format" formatted="true">Am %s um %s hochgeladen</string>
++    <string name="upload_date_format" formatted="true">Am %1$s um %2$s hochgeladen</string>
+     <string name="favorite_count_format" formatted="true">%d Favoriten</string>
+     <string name="favorite_manga">Lieblingsgalerien</string>
+     <string name="setting_on_remove_ignored">Die Galerie mit ignorierten Tags wird nicht gezeigt</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">Keine Updates gefunden</string>
+     <string name="error_retrieving">Fehler beim Update suchen</string>
+     <string name="new_version_found">Neue Version gefunden</string>
+-    <string name="update_version_format" formatted="true">Von Version %s auf Version %s updaten?\n\nÄnderungsprotokoll:\n%s</string>
++    <string name="update_version_format" formatted="true">Von Version %1$s auf Version %2$s updaten?\n\nÄnderungsprotokoll:\n%3$s</string>
+     <string name="clear_this_list">Diese Liste leeren?</string>
+     <string name="set_minimum_count">Setze Minimalanzahl</string>
+     <string name="sort_by_title">Ordne nach Titeln</string>
+diff --git a/app/src/main/res/values-es-rES/strings.xml b/app/src/main/res/values-es-rES/strings.xml
+index eb083e1..9273ee6 100644
+--- a/app/src/main/res/values-es-rES/strings.xml
++++ b/app/src/main/res/values-es-rES/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">Manga aleatorio</string>
+     <string name="save_page">Guardar la página</string>
+     <string name="page_count_format" formatted="true">%d páginas</string>
+-    <string name="upload_date_format" formatted="true">Subido el %s a las %s</string>
++    <string name="upload_date_format" formatted="true">Subido el %1$s a las %2$s</string>
+     <string name="favorite_count_format" formatted="true">%d favoritos</string>
+     <string name="favorite_manga">Manga favorito</string>
+     <string name="setting_on_remove_ignored">Las galerías con etiquetas ignoradas no se mostrarán</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">No se han encontrado actualizaciones</string>
+     <string name="error_retrieving">Error al obtener la última versión</string>
+     <string name="new_version_found">Nueva versión encontrada</string>
+-    <string name="update_version_format" formatted="true">¿Actualizar de versión %s a la versión %s?  Registro de cambios: %s</string>
++    <string name="update_version_format" formatted="true">¿Actualizar de versión %1$s a la versión %2$s?  Registro de cambios: %3$s</string>
+     <string name="clear_this_list">¿Limpiar esta lista?</string>
+     <string name="set_minimum_count">Establecer número mínimo</string>
+     <string name="sort_by_title">Ordenar por título</string>
+diff --git a/app/src/main/res/values-fr-rFR/strings.xml b/app/src/main/res/values-fr-rFR/strings.xml
+index 9506748..70df386 100644
+--- a/app/src/main/res/values-fr-rFR/strings.xml
++++ b/app/src/main/res/values-fr-rFR/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">Galerie aléatoire</string>
+     <string name="save_page">Enregistrer la page</string>
+     <string name="page_count_format" formatted="true">%d pages</string>
+-    <string name="upload_date_format" formatted="true">Ajouté le %s à %s</string>
++    <string name="upload_date_format" formatted="true">Ajouté le %1$s à %2$s</string>
+     <string name="favorite_count_format" formatted="true">%d favoris</string>
+     <string name="favorite_manga">Galeries favorites</string>
+     <string name="setting_on_remove_ignored">Les galeries avec des tags ignorés ne seront pas affichées</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">Pas de mise à jour trouvée</string>
+     <string name="error_retrieving">Erreur lors de la récupération de la dernière version</string>
+     <string name="new_version_found">Nouvelle version trouvée</string>
+-    <string name="update_version_format" formatted="true">Mettre à jour depuis la version %s vers la version %s ?\n\nJournal des modifications :\n%s</string>
++    <string name="update_version_format" formatted="true">Mettre à jour depuis la version %1$s vers la version %2$s ?\n\nJournal des modifications :\n%3$s</string>
+     <string name="clear_this_list">Effacer cette liste ?</string>
+     <string name="set_minimum_count">Définir le nombre minimum</string>
+     <string name="sort_by_title">Trier par titre</string>
+diff --git a/app/src/main/res/values-it-rIT/strings.xml b/app/src/main/res/values-it-rIT/strings.xml
+index 73173a4..8160c47 100644
+--- a/app/src/main/res/values-it-rIT/strings.xml
++++ b/app/src/main/res/values-it-rIT/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">Manga casuale</string>
+     <string name="save_page">Salva pagina</string>
+     <string name="page_count_format" formatted="true">%d pagine</string>
+-    <string name="upload_date_format" formatted="true">Caricato il %s alle %s</string>
++    <string name="upload_date_format" formatted="true">Caricato il %1$s alle %2$s</string>
+     <string name="favorite_count_format" formatted="true">%d preferiti</string>
+     <string name="favorite_manga">Manga preferiti</string>
+     <string name="setting_on_remove_ignored">Le gallerie con tag ignorati verranno nascoste</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">Nessun aggiornamento trovato</string>
+     <string name="error_retrieving">Errore nel prelievo dell\'ultima versione</string>
+     <string name="new_version_found">Nuova versione trovata</string>
+-    <string name="update_version_format" formatted="true">Aggiorna dalla versione %s alla versione %s?\n\nModifiche:\n%s</string>
++    <string name="update_version_format" formatted="true">Aggiorna dalla versione %1$s alla versione %2$s?\n\nModifiche:\n%3$s</string>
+     <string name="clear_this_list">Pulisci la lista?</string>
+     <string name="set_minimum_count">Imposta minimo</string>
+     <string name="sort_by_title">Ordina per titolo</string>
+diff --git a/app/src/main/res/values-ja-rJP/strings.xml b/app/src/main/res/values-ja-rJP/strings.xml
+index 87c031f..04de43e 100644
+--- a/app/src/main/res/values-ja-rJP/strings.xml
++++ b/app/src/main/res/values-ja-rJP/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">ランダムギャラリー</string>
+     <string name="save_page">現在のページを保存する</string>
+     <string name="page_count_format" formatted="true">%dページ</string>
+-    <string name="upload_date_format" formatted="true">%sの%sにアップロード</string>
++    <string name="upload_date_format" formatted="true">%1$sの%2$sにアップロード</string>
+     <string name="favorite_count_format" formatted="true">%dお気に入り</string>
+     <string name="favorite_manga">お気に入りのギャラリー</string>
+     <string name="setting_on_remove_ignored">タグが無視されているギャラリーは表示されません</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">お使いのバージョンは最新です。</string>
+     <string name="error_retrieving">最新バージョンの取得中にエラーが発生しました</string>
+     <string name="new_version_found">新しい更新が利用可能です</string>
+-    <string name="update_version_format" formatted="true">バージョン%sからバージョン%sに更新しますか？\ n \ n変更ログ：\ n%s</string>
++    <string name="update_version_format" formatted="true">バージョン%1$sからバージョン%2$sに更新しますか？\ n \ n変更ログ：\ n%3$s</string>
+     <string name="clear_this_list">このリストを削除</string>
+     <string name="set_minimum_count">最小カウントを設定</string>
+     <string name="sort_by_title">タイトルで並べ替え</string>
+diff --git a/app/src/main/res/values-pt-rBR/strings.xml b/app/src/main/res/values-pt-rBR/strings.xml
+index 3156e85..7d121b7 100644
+--- a/app/src/main/res/values-pt-rBR/strings.xml
++++ b/app/src/main/res/values-pt-rBR/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">Galeria aleatória</string>
+     <string name="save_page">Salvar página</string>
+     <string name="page_count_format" formatted="true">%d páginas</string>
+-    <string name="upload_date_format" formatted="true">Enviado em %s as %s</string>
++    <string name="upload_date_format" formatted="true">Enviado em %1$s as %2$s</string>
+     <string name="favorite_count_format" formatted="true">%d favoritos</string>
+     <string name="favorite_manga">Galerias favoritas</string>
+     <string name="setting_on_remove_ignored">As galerias com tags ignoradas não serão exibidas</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">Nenhuma atualização encontrada</string>
+     <string name="error_retrieving">Erro ao procurar versão mais recente</string>
+     <string name="new_version_found">Nova versão encontrada</string>
+-    <string name="update_version_format" formatted="true">Atualizar da versão %s para a versão %s?\n\nNotas de atualização:\n%s</string>
++    <string name="update_version_format" formatted="true">Atualizar da versão %1$s para a versão %2$s?\n\nNotas de atualização:\n%3$s</string>
+     <string name="clear_this_list">Limpar essa lista?</string>
+     <string name="set_minimum_count">Definir contagem mínima</string>
+     <string name="sort_by_title">Classificar por título</string>
+diff --git a/app/src/main/res/values-ru-rRU/strings.xml b/app/src/main/res/values-ru-rRU/strings.xml
+index cd157ad..c88549a 100644
+--- a/app/src/main/res/values-ru-rRU/strings.xml
++++ b/app/src/main/res/values-ru-rRU/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">Случайная галерея</string>
+     <string name="save_page">Сохранить страницу</string>
+     <string name="page_count_format" formatted="true">%d страниц</string>
+-    <string name="upload_date_format" formatted="true">Загружено %s в %s</string>
++    <string name="upload_date_format" formatted="true">Загружено %1$s в %2$s</string>
+     <string name="favorite_count_format" formatted="true">%d избранных</string>
+     <string name="favorite_manga">Избранные галереи</string>
+     <string name="setting_on_remove_ignored">Галереи с игнорируемыми тэгами не будут показываться</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">Не было найдено обновлений</string>
+     <string name="error_retrieving">Ошибка при получении последней версии</string>
+     <string name="new_version_found">Была найдена новая версия</string>
+-    <string name="update_version_format" formatted="true">Обновлено с версии %s до версии %s?\n\nChangelog:\n%s</string>
++    <string name="update_version_format" formatted="true">Обновлено с версии %1$s до версии %2$s?\n\nChangelog:\n%3$s</string>
+     <string name="clear_this_list">Очистить этот список?</string>
+     <string name="set_minimum_count">Установить минимальный счёт</string>
+     <string name="sort_by_title">Сортировать по названию</string>
+diff --git a/app/src/main/res/values-tr-rTR/strings.xml b/app/src/main/res/values-tr-rTR/strings.xml
+index d568729..62420d8 100644
+--- a/app/src/main/res/values-tr-rTR/strings.xml
++++ b/app/src/main/res/values-tr-rTR/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">Rastgele Galeri</string>
+     <string name="save_page">Sayfayı kaydet</string>
+     <string name="page_count_format" formatted="true">%d Sayfa</string>
+-    <string name="upload_date_format" formatted="true">%s tarihinde %s saatinde yüklendi</string>
++    <string name="upload_date_format" formatted="true">%1$s tarihinde %2$s saatinde yüklendi</string>
+     <string name="favorite_count_format" formatted="true">%d Favori</string>
+     <string name="favorite_manga">Favoriler</string>
+     <string name="setting_on_remove_ignored">Dikkate alınmayan etiket içeren galeriler gösterilmeyecek</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">Zaten en son sürümü kullanıyorsunuz!</string>
+     <string name="error_retrieving">Güncelleme bilgileri alınırken bir sorun oluştu</string>
+     <string name="new_version_found">Yeni sürüm bulundu</string>
+-    <string name="update_version_format" formatted="true">%s bu sürümden %s bu sürüme güncellensin mi?  Değişim kaydı: %s</string>
++    <string name="update_version_format" formatted="true">%1$s bu sürümden %2$s bu sürüme güncellensin mi?  Değişim kaydı: %3$s</string>
+     <string name="clear_this_list">Bu listeyi temizle?</string>
+     <string name="set_minimum_count">Minimum sayıyı ayarla</string>
+     <string name="sort_by_title">Başlığa göre sırala</string>
+diff --git a/app/src/main/res/values-uk-rUA/strings.xml b/app/src/main/res/values-uk-rUA/strings.xml
+index 0fa4d07..2aa8a10 100644
+--- a/app/src/main/res/values-uk-rUA/strings.xml
++++ b/app/src/main/res/values-uk-rUA/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">Випадкова галерея</string>
+     <string name="save_page">Зберегти сторінку</string>
+     <string name="page_count_format" formatted="true">%d сторінок</string>
+-    <string name="upload_date_format" formatted="true">Завантажено %s о %s</string>
++    <string name="upload_date_format" formatted="true">Завантажено %1$s о %2$s</string>
+     <string name="favorite_count_format" formatted="true">%d уподобань</string>
+     <string name="favorite_manga">Уподобані галереї</string>
+     <string name="setting_on_remove_ignored">Галереї з ігнорованими мітками не будуть показані</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">Оновлення не знайдені</string>
+     <string name="error_retrieving">Помилка під час отримання останньої версії</string>
+     <string name="new_version_found">Знайдена нова версія</string>
+-    <string name="update_version_format" formatted="true">Оновити з версії %s до версії %s?\n\nЖурнал змін:\n%s</string>
++    <string name="update_version_format" formatted="true">Оновити з версії %1$s до версії %2$s?\n\nЖурнал змін:\n%3$s</string>
+     <string name="clear_this_list">Очистити цей список?</string>
+     <string name="set_minimum_count">Встановити мінімальну кількість</string>
+     <string name="sort_by_title">Впорядковувати за назвою</string>
+diff --git a/app/src/main/res/values-zh-rCN/strings.xml b/app/src/main/res/values-zh-rCN/strings.xml
+index 9663081..d8e22b3 100644
+--- a/app/src/main/res/values-zh-rCN/strings.xml
++++ b/app/src/main/res/values-zh-rCN/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">随机漫画</string>
+     <string name="save_page">保存页数</string>
+     <string name="page_count_format" formatted="true">%d 页</string>
+-    <string name="upload_date_format" formatted="true">上传于 %s 在 %s</string>
++    <string name="upload_date_format" formatted="true">上传于 %1$s 在 %2$s</string>
+     <string name="favorite_count_format" formatted="true">%d 收藏</string>
+     <string name="favorite_manga">收藏漫画</string>
+     <string name="setting_on_remove_ignored">不显示带有已忽略标签的画廊</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">未发现更新</string>
+     <string name="error_retrieving">检索最新版本出错</string>
+     <string name="new_version_found">发现新版本</string>
+-    <string name="update_version_format" formatted="true">从 V %s 更新至 V %s？\n\nChangelog:\n%s</string>
++    <string name="update_version_format" formatted="true">从 V %1$s 更新至 V %2$s？\n\nChangelog:\n%3$s</string>
+     <string name="clear_this_list">清空此列表？</string>
+     <string name="set_minimum_count">设置最小值</string>
+     <string name="sort_by_title">按标题排列</string>
+diff --git a/app/src/main/res/values-zh-rTW/strings.xml b/app/src/main/res/values-zh-rTW/strings.xml
+index dfd7508..5b23509 100644
+--- a/app/src/main/res/values-zh-rTW/strings.xml
++++ b/app/src/main/res/values-zh-rTW/strings.xml
+@@ -80,7 +80,7 @@
+     <string name="random_manga">隨機漫畫</string>
+     <string name="save_page">保存頁數</string>
+     <string name="page_count_format" formatted="true">%d 頁</string>
+-    <string name="upload_date_format" formatted="true">上傳於 %s 在 %s</string>
++    <string name="upload_date_format" formatted="true">上傳於 %1$s 在 %2$s</string>
+     <string name="favorite_count_format" formatted="true">%d 收藏</string>
+     <string name="favorite_manga">收藏漫畫</string>
+     <string name="setting_on_remove_ignored">不顯示帶有已忽略標籤的圖庫</string>
+@@ -92,7 +92,7 @@
+     <string name="no_updates_found">未發現更新</string>
+     <string name="error_retrieving">檢索最新版本出錯</string>
+     <string name="new_version_found">發現新版本</string>
+-    <string name="update_version_format" formatted="true">從V %s 更新至V %s？\n\nChangelog:\n%s</string>
++    <string name="update_version_format" formatted="true">從V %1$s 更新至V %2$s？\n\nChangelog:\n%3$s</string>
+     <string name="clear_this_list">清空此列表？</string>
+     <string name="set_minimum_count">設定最小值</string>
+     <string name="sort_by_title">按標題排列</string>
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+index ef016f8..343b4c1 100644
+--- a/app/src/main/res/values/strings.xml
++++ b/app/src/main/res/values/strings.xml
+@@ -153,7 +153,7 @@
+     <string name="random_manga">Random gallery</string>
+     <string name="save_page">Save page</string>
+     <string name="page_count_format" formatted="true">%d pages</string>
+-    <string name="upload_date_format" formatted="true">Uploaded on %s at %s</string>
++    <string name="upload_date_format" formatted="true">Uploaded on %1$s at %2$s</string>
+     <string name="favorite_count_format" formatted="true">%d favorites</string>
+     <string name="favorite_manga">Favorite galleries</string>
+     <string name="setting_on_remove_ignored">The galleries with ignored tags will not be shown</string>
+@@ -165,7 +165,7 @@
+     <string name="no_updates_found">No updates found</string>
+     <string name="error_retrieving">Error in retrieving latest version</string>
+     <string name="new_version_found">New version found</string>
+-    <string name="update_version_format" formatted="true">Update from version %s to version %s?\n\nChangelog:\n%s</string>
++    <string name="update_version_format" formatted="true">Update from version %1$s to version %2$s?\n\nChangelog:\n%3$s</string>
+     <string name="clear_this_list">Clear this list?</string>
+     <string name="set_minimum_count">Set minimum count</string>
+     <string name="sort_by_title">Sort by title</string>
+diff --git a/app/src/main/res/values/styles.xml b/app/src/main/res/values/styles.xml
+index 352a366..25f659f 100644
+--- a/app/src/main/res/values/styles.xml
++++ b/app/src/main/res/values/styles.xml
+@@ -5,13 +5,21 @@
+         <item name="colorPrimary">@color/colorPrimary</item>
+         <item name="colorPrimaryVariant">@color/primaryColorVariant</item>
+         <item name="colorAccent">@color/colorAccent</item>
++        <!-- Prevent device "force dark" / "darken apps" from overriding our Material palette (can cause low contrast on Android 15 devices). -->
++        <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
++        <!-- Ensure dialogs consistently use Material theming (button contrast, surface/onSurface). -->
++        <item name="materialAlertDialogTheme">@style/ThemeOverlay.MaterialComponents.MaterialAlertDialog</item>
+         <item name="android:windowSplashScreenBackground" tools:targetApi="31">#1F1F1F</item>
+         <item name="navHeaderGradient">@drawable/side_nav_bar</item>
+     </style>
+ 
+ 
+     <style name="AppTheme.Black" parent="AppTheme">
++        <!-- True black background while keeping readable contrast regardless of system night mode. -->
+         <item name="colorSurface">#000000</item>
++        <item name="colorOnSurface">@android:color/white</item>
++        <item name="colorOnBackground">@android:color/white</item>
++        <item name="colorOnPrimary">@android:color/white</item>
+         <item name="android:windowBackground">#000000</item>
+         <item name="android:colorBackground">#000000</item>
+         <item name="elevationOverlayEnabled">false</item>
+diff --git a/app/src/main/res/xml/backup_content.xml b/app/src/main/res/xml/backup_content.xml
+index 8d432d7..ce44bb3 100644
+--- a/app/src/main/res/xml/backup_content.xml
++++ b/app/src/main/res/xml/backup_content.xml
+@@ -7,4 +7,9 @@
+     <include
+         domain="sharedpref"
+         path="." />
++
++    <!-- Contains persisted session cookies / auth state (PersistentCookieJar via SharedPrefsCookiePersistor). -->
++    <exclude
++        domain="sharedpref"
++        path="Login.xml" />
+ </full-backup-content>
+diff --git a/app/src/main/res/xml/provider_paths.xml b/app/src/main/res/xml/provider_paths.xml
+index cd49e37..c49b846 100644
+--- a/app/src/main/res/xml/provider_paths.xml
++++ b/app/src/main/res/xml/provider_paths.xml
+@@ -1,8 +1,9 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <paths>
++    <!-- Legacy external storage (pre-Android 11). Limit sharing to the app's top-level folder. -->
+     <external-path
+-        name="external"
+-        path="." />
++        name="external_nclientv3"
++        path="NClientV3/" />
+     <external-files-path
+         name="external_files"
+         path="." />
+@@ -18,24 +19,5 @@
+     <external-media-path
+         name="external_media"
+         path="." />
+-
+-    <external-path
+-        name="external_root"
+-        path="/" />
+-    <external-files-path
+-        name="external_files_root"
+-        path="/" />
+-    <cache-path
+-        name="cache_root"
+-        path="/" />
+-    <external-cache-path
+-        name="external_cache_root"
+-        path="/" />
+-    <files-path
+-        name="files_root"
+-        path="/" />
+-    <external-media-path
+-        name="external_media_root"
+-        path="/" />
+ </paths>
+ 
+diff --git a/build.gradle b/build.gradle
+index d196e53..38737df 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -4,9 +4,6 @@ buildscript {
+     repositories {
+         google()
+         mavenCentral()
+-        maven {
+-            url = 'https://jitpack.io'
+-        }
+     }
+     dependencies {
+         classpath 'com.android.tools.build:gradle:8.13.2'
+@@ -17,13 +14,6 @@ buildscript {
+ }
+ 
+ allprojects {
+-    repositories {
+-        google()
+-        mavenCentral()
+-        maven {
+-            url = "https://jitpack.io"
+-        }
+-    }
+     gradle.projectsEvaluated {
+         tasks.withType(JavaCompile).tap {
+             configureEach {
+diff --git a/settings.gradle b/settings.gradle
+index e7b4def..ef981c4 100644
+--- a/settings.gradle
++++ b/settings.gradle
+@@ -1 +1,17 @@
++dependencyResolutionManagement {
++    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
++    repositories {
++        google()
++        mavenCentral()
++        exclusiveContent {
++            forRepository {
++                maven { url = uri("https://jitpack.io") }
++            }
++            filter {
++                includeGroup("com.github.franmontiel")
++            }
++        }
++    }
++}
++
+ include ':app'
