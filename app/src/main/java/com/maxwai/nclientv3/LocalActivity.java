@@ -61,9 +61,15 @@ public class LocalActivity extends BaseActivity {
         findViewById(R.id.page_switcher).setVisibility(View.GONE);
         recycler = findViewById(R.id.recycler);
         refresher = findViewById(R.id.refresher);
-        refresher.setOnRefreshListener(() -> new FakeInspector(this, folder).execute(this));
         changeLayout(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
-        new FakeInspector(this, folder).execute(this);
+
+        FakeInspector.CachedLocalGalleries cached = FakeInspector.getCached(folder);
+        adapter = new LocalAdapter(this, cached != null ? cached.galleries : new java.util.ArrayList<>());
+        if (cached != null) adapter.setLocalGalleriesSignature(cached.signature);
+        setAdapter(adapter);
+
+        refresher.setOnRefreshListener(() -> loadLocalGalleries(true));
+        loadLocalGalleries(false);
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -82,6 +88,11 @@ public class LocalActivity extends BaseActivity {
         this.adapter = adapter;
         this.adapter.addListener(listener);
         recycler.setAdapter(adapter);
+    }
+
+    private void loadLocalGalleries(boolean forceRefresh) {
+        if (adapter == null) return;
+        new FakeInspector(this, folder, adapter, forceRefresh).execute(this);
     }
 
     public void setIdGalleryPosition(int idGalleryPosition) {
@@ -197,7 +208,11 @@ public class LocalActivity extends BaseActivity {
         builder.setTitle(R.string.choose_directory).setIcon(R.drawable.ic_folder);
         builder.setAdapter(adapter, (dialog, which) -> {
             folder = new File(strings.get(which), "NClientV3");
-            new FakeInspector(this, folder).execute(this);
+            FakeInspector.CachedLocalGalleries cached = FakeInspector.getCached(folder);
+            if (this.adapter != null) {
+                this.adapter.setLocalGalleries(cached != null ? cached.galleries : new java.util.ArrayList<>(), cached != null ? cached.signature : -1L);
+            }
+            loadLocalGalleries(false);
         }).setNegativeButton(R.string.cancel, null).show();
     }
 

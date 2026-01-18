@@ -55,6 +55,7 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
     private final LocalActivity context;
     private final List<LocalGallery> dataset;
     private final List<GalleryDownloaderV2> galleryDownloaders;
+    private volatile long localGalleriesSignature = -1L;
     private final Comparator<Object> comparatorByName = (o1, o2) -> {
         if (o1 == o2) return 0;
         boolean b1 = o1 instanceof LocalGallery;
@@ -176,6 +177,29 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
         sortElements();
     }
 
+    public void setLocalGalleriesSignature(long signature) {
+        this.localGalleriesSignature = signature;
+    }
+
+    public void setLocalGalleries(@Nullable List<LocalGallery> galleries, long signature) {
+        ArrayList<LocalGallery> newGalleries = galleries == null ? new ArrayList<>() : new ArrayList<>(galleries);
+        if (signature != -1L && signature == localGalleriesSignature) return;
+        localGalleriesSignature = signature;
+
+        AppExecutors.io().execute(() -> {
+            SparseIntArray statusColors = loadStatusColors(newGalleries);
+            context.runOnUiThread(() -> {
+                for (int i = 0; i < statusColors.size(); i++) {
+                    statuses.put(statusColors.keyAt(i), statusColors.valueAt(i));
+                }
+                dataset.clear();
+                dataset.addAll(newGalleries);
+                sortElements();
+                notifyDataSetChanged();
+            });
+        });
+    }
+
     static void startGallery(Activity context, File directory) {
         if (!directory.isDirectory()) return;
         LocalGallery ent = new LocalGallery(directory);
@@ -194,7 +218,7 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
             dataset.addAll(gallery);
             prefetchStatusColors(gallery);
             sortElements();
-            context.runOnUiThread(() -> notifyItemRangeChanged(0, getItemCount()));
+            context.runOnUiThread(this::notifyDataSetChanged);
         }
     }
 
@@ -217,6 +241,28 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
             int id = queryIds[i];
             statuses.put(id, loaded.get(id, defaultColor));
         }
+    }
+
+    private static SparseIntArray loadStatusColors(@NonNull List<LocalGallery> galleries) {
+        int[] ids = new int[galleries.size()];
+        int count = 0;
+        for (LocalGallery g : galleries) {
+            if (g == null) continue;
+            int id = g.getId();
+            if (id <= 0) continue;
+            ids[count++] = id;
+        }
+        SparseIntArray out = new SparseIntArray();
+        if (count == 0) return out;
+        int[] queryIds = new int[count];
+        System.arraycopy(ids, 0, queryIds, 0, count);
+        SparseIntArray loaded = Queries.StatusMangaTable.getStatusColors(queryIds);
+        int defaultColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
+        for (int i = 0; i < count; i++) {
+            int id = queryIds[i];
+            out.put(id, loaded.get(id, defaultColor));
+        }
+        return out;
     }
 
     @Override
@@ -405,7 +451,16 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
     @Override
     public long getItemId(int position) {
         if (position == -1) return -1;
-        return Objects.hash(filter.get(position).hashCode(), position);
+        Object item = filter.get(position);
+        if (item instanceof LocalGallery) {
+            LocalGallery lg = (LocalGallery) item;
+            return (((long) lg.getDirectory().getAbsolutePath().hashCode()) << 1) ^ 1L;
+        }
+        if (item instanceof GalleryDownloaderV2) {
+            GalleryDownloaderV2 d = (GalleryDownloaderV2) item;
+            return (((long) d.hashCode()) << 1);
+        }
+        return (((long) item.hashCode()) << 1);
     }
 
     @Override
@@ -524,7 +579,7 @@ public class LocalAdapter extends MultichoiceAdapter<Object, LocalAdapter.ViewHo
 
     public void sortChanged() {
         sortElements();
-        context.runOnUiThread(() -> notifyItemRangeChanged(0, getItemCount()));
+        context.runOnUiThread(this::notifyDataSetChanged);
     }
 
     public void startSelected() {
