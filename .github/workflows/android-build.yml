@@ -62,41 +62,52 @@ jobs:
       - name: Gradle lint (Debug)
         run: ./gradlew --no-daemon --stacktrace ${{ steps.tasks.outputs.lint_task }}
 
-      - name: Detect signing secrets
-        id: signing
+      # Prepare signing:
+      # - If secrets exist: decode provided keystore
+      # - Else: generate a temporary keystore so Release APK is installable for testing
+      - name: Prepare signing (provided or generated)
+        shell: bash
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Decode keystore (only when signing is available)
-        if: ${{ steps.signing.outputs.available == 'true' }}
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/keystore.jks
-
-      - name: Gradle build (Release - signed)
-        if: ${{ steps.signing.outputs.available == 'true' }}
-        env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          set -euo pipefail
+
+          KEYSTORE_FILE=/tmp/ci-keystore.jks
+
+          if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_FILE"
+            echo "KEYSTORE_FILE=$KEYSTORE_FILE" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "Using provided signing keystore."
+          else
+            # Generate ephemeral keystore for CI installs (NOT for production distribution)
+            keytool -genkeypair -v \
+              -keystore "$KEYSTORE_FILE" \
+              -storepass "android" \
+              -keypass "android" \
+              -alias "ci" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=CI,O=CI,C=US"
+
+            echo "KEYSTORE_FILE=$KEYSTORE_FILE" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=android" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=ci" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=android" >> "$GITHUB_ENV"
+            echo "Generated temporary CI signing keystore."
+          fi
+
+      - name: Gradle build (Release - signed)
+        run: |
           ./gradlew --no-daemon --stacktrace ${{ steps.tasks.outputs.release_task }} \
-            -Pandroid.injected.signing.store.file=/tmp/keystore.jks \
-            -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
-            -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
-
-
-      - name: Gradle build (Release - unsigned)
-        if: ${{ steps.signing.outputs.available != 'true' }}
-        run: ./gradlew --no-daemon --stacktrace ${{ steps.tasks.outputs.release_task }}
+            -Pandroid.injected.signing.store.file="$KEYSTORE_FILE" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
