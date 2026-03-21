@@ -22,6 +22,7 @@ import com.maxwai.nclientv3.R;
 import com.maxwai.nclientv3.async.database.DatabaseHelper;
 import com.maxwai.nclientv3.async.downloader.DownloadGalleryV2;
 import com.maxwai.nclientv3.bypass.BypassManager;
+import com.maxwai.nclientv3.bypass.BypassNetworkController;
 import com.maxwai.nclientv3.settings.Database;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.settings.TagV2;
@@ -59,8 +60,9 @@ public class CrashApplication extends Application {
         if (!actualVersion.equals(version))
             afterUpdateChecks(preferences, version);
 
-        Global.initFromShared(this);
         BypassManager.getInstance().initialize(this);
+        BypassNetworkController.getInstance().initialize(this);
+        Global.initFromShared(this);
         NetworkUtil.initConnectivity(this);
         TagV2.initMinCount(this);
         TagV2.initSortByName(this);

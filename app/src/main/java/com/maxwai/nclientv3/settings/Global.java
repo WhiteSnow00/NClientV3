@@ -32,6 +32,8 @@ import com.maxwai.nclientv3.api.enums.Language;
 import com.maxwai.nclientv3.api.enums.SortType;
 import com.maxwai.nclientv3.api.enums.TitleType;
 import com.maxwai.nclientv3.api.local.LocalSortType;
+import com.maxwai.nclientv3.bypass.BypassNetworkController;
+import com.maxwai.nclientv3.bypass.BypassRoutingInterceptor;
 import com.maxwai.nclientv3.components.CustomCookieJar;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
@@ -388,6 +390,7 @@ public class Global {
                     new SharedPrefsCookiePersistor(preferences)
                 )
             );
+        builder.addInterceptor(new BypassRoutingInterceptor(BypassNetworkController.getInstance()));
         builder.addInterceptor(new CustomInterceptor(context.getApplicationContext(), true));
         client = builder.build();
         client.dispatcher().setMaxRequests(25);
@@ -401,6 +404,12 @@ public class Global {
     private static void initHttpClient(@NonNull Context context) {
         if (client != null) return;
         reloadHttpClient(context);
+    }
+
+    public static void evictHttpConnections() {
+        OkHttpClient localClient = client;
+        if (localClient == null) return;
+        localClient.connectionPool().evictAll();
     }
 
     public static int getOffscreenLimit() {
