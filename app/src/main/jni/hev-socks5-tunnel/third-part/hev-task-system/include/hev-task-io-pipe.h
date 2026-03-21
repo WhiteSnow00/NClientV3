@@ -1,1 +1,2 @@
-../src/lib/io/pipe/hev-task-io-pipe.h
+#pragma once
+#include "../src/lib/io/pipe/hev-task-io-pipe.h"

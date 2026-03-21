@@ -1,1 +1,2 @@
-../src/lib/dns/hev-task-dns.h
+#pragma once
+#include "../src/lib/dns/hev-task-dns.h"

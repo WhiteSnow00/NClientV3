@@ -1,1 +1,2 @@
-../src/yaml.h
+#pragma once
+#include "../src/yaml.h"

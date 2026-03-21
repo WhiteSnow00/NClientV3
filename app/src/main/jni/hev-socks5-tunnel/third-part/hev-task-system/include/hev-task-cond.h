@@ -1,1 +1,2 @@
-../src/kern/sync/hev-task-cond.h
+#pragma once
+#include "../src/kern/sync/hev-task-cond.h"

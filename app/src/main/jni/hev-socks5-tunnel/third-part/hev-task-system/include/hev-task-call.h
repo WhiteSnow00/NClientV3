@@ -1,1 +1,2 @@
-../src/kern/task/hev-task-call.h
+#pragma once
+#include "../src/kern/task/hev-task-call.h"

@@ -1,1 +1,2 @@
-../src/hev-socks5-proto.h
+#pragma once
+#include "../src/hev-socks5-proto.h"

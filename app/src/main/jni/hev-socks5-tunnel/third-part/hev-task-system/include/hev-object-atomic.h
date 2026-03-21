@@ -1,1 +1,2 @@
-../src/lib/object/hev-object-atomic.h
+#pragma once
+#include "../src/lib/object/hev-object-atomic.h"

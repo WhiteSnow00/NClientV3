@@ -1,1 +1,2 @@
-../src/hev-main.h
+#pragma once
+#include "../src/hev-main.h"
