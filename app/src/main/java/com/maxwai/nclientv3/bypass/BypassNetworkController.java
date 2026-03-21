@@ -108,7 +108,7 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
             return false;
         }
 
-        String mergedHint = normalizeMessage(primaryHint + " " + secondaryHint);
+        String mergedHint = normalizeMessage(joinHints(primaryHint, secondaryHint));
         if (looksLikeCloudflareChallenge(mergedHint)) {
             return false;
         }
@@ -368,7 +368,7 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
     }
 
     private boolean looksLikeBlockPage(@Nullable String primaryHint, @Nullable String secondaryHint) {
-        String hint = normalizeMessage(primaryHint + " " + secondaryHint);
+        String hint = normalizeMessage(joinHints(primaryHint, secondaryHint));
         if (hint.isEmpty()) {
             return false;
         }
@@ -383,7 +383,7 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
     }
 
     private boolean looksLikeUnexpectedTextPayload(@Nullable String primaryHint, @Nullable String secondaryHint) {
-        String hint = normalizeMessage(primaryHint + " " + secondaryHint);
+        String hint = normalizeMessage(joinHints(primaryHint, secondaryHint));
         return hint.contains("content-type: text/html") ||
             hint.contains("content-type: text/plain") ||
             hint.contains("mime=text/html") ||
@@ -423,6 +423,20 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
     @NonNull
     private String normalizeMessage(@Nullable String message) {
         return message == null ? "" : message.trim().toLowerCase(Locale.ROOT);
+    }
+
+    @NonNull
+    private String joinHints(@Nullable String primaryHint, @Nullable String secondaryHint) {
+        if (primaryHint == null && secondaryHint == null) {
+            return "";
+        }
+        if (primaryHint == null) {
+            return secondaryHint;
+        }
+        if (secondaryHint == null) {
+            return primaryHint;
+        }
+        return primaryHint + ' ' + secondaryHint;
     }
 
     public static final class HostAccessSnapshot {
