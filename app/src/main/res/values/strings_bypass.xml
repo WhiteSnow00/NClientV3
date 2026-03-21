@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bypass_notification_title">Access bypass</string>
+    <string name="bypass_notification_preparing_vpn">Preparing internal VPN bypass...</string>
+    <string name="bypass_notification_preparing_proxy">Preparing local bypass proxy...</string>
+    <string name="bypass_vpn_channel_name">VPN bypass</string>
+    <string name="bypass_proxy_channel_name">Proxy bypass</string>
+</resources>
