@@ -19,6 +19,7 @@ import com.maxwai.nclientv3.utility.LogUtility;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.Socket;
 
 public class BypassVpnService extends LifecycleTunnelVpnService implements BypassSocketProtector {
     private static final int NOTIFICATION_ID = 4010;
@@ -40,6 +41,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
         super.onCreate();
         BypassNotificationHelper.ensureChannels(this);
         BypassManager.getInstance().initialize(this);
+        BypassManager.getInstance().setDirectSocketProtector(this::protectDirectSocket);
     }
 
     @Override
@@ -64,6 +66,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
 
     @Override
     public void onDestroy() {
+        BypassManager.getInstance().setDirectSocketProtector(null);
         super.onDestroy();
     }
 
@@ -73,6 +76,15 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
             return protect(fd);
         } catch (Exception e) {
             LogUtility.w("Unable to protect socket", e);
+            return false;
+        }
+    }
+
+    private boolean protectDirectSocket(@NonNull Socket socket) {
+        try {
+            return protect(socket);
+        } catch (Exception e) {
+            LogUtility.w("Unable to protect direct socket", e);
             return false;
         }
     }
@@ -234,6 +246,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
         closeTunnelFd();
         deleteTunnelConfig();
         proxyRuntime.stop(1000L);
+        BypassManager.getInstance().setDirectSocketProtector(null);
         stopActiveForeground();
 
         if (markIdle) {

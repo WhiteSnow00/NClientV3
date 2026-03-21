@@ -13,6 +13,7 @@ import com.maxwai.nclientv3.api.InspectorV3;
 import com.maxwai.nclientv3.api.components.Gallery;
 import com.maxwai.nclientv3.api.local.LocalGallery;
 import com.maxwai.nclientv3.async.database.Queries;
+import com.maxwai.nclientv3.bypass.BypassNetworkController;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
@@ -27,6 +28,7 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Pattern;
 
+import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.Response;
 
@@ -258,6 +260,10 @@ public class GalleryDownloaderV2 {
     }
 
     private boolean savePage(PageContainer page) {
+        return savePage(page, true);
+    }
+
+    private boolean savePage(PageContainer page, boolean allowBypassRetry) {
         if (page == null) return true;
         File filePath = new File(folder, page.getPageName());
         LogUtility.d("Saving into: " + filePath + "," + page.url);
@@ -267,6 +273,10 @@ public class GalleryDownloaderV2 {
                 return false;
             }
             if (r.body() == null) return false;
+            MediaType contentType = r.body().contentType();
+            if (contentType != null && !"image".equalsIgnoreCase(contentType.type())) {
+                return retryInvalidPagePayload(page, allowBypassRetry, "content-type: " + contentType, null);
+            }
 
             long expectedLength = r.body().contentLength(); // -1 when unknown (chunked/gzip/etc)
             File partial = new File(folder, page.getPageName() + ".part");
@@ -274,12 +284,12 @@ public class GalleryDownloaderV2 {
             if (expectedLength >= 0 && written != expectedLength) {
                 //noinspection ResultOfMethodCallIgnored
                 partial.delete();
-                return false;
+                return retryInvalidPagePayload(page, allowBypassRetry, "content-length mismatch", null);
             }
             if (isCorrupted(partial)) {
                 //noinspection ResultOfMethodCallIgnored
                 partial.delete();
-                return false;
+                return retryInvalidPagePayload(page, allowBypassRetry, "image payload corrupted", null);
             }
             //noinspection ResultOfMethodCallIgnored
             filePath.delete();
@@ -293,6 +303,16 @@ public class GalleryDownloaderV2 {
             LogUtility.e(e, e);
         }
         return false;
+    }
+
+    private boolean retryInvalidPagePayload(@NonNull PageContainer page, boolean allowBypassRetry, @Nullable String primaryHint, @Nullable String secondaryHint) {
+        if (!allowBypassRetry) {
+            return false;
+        }
+        if (!BypassNetworkController.getInstance().prepareInvalidContentRetry(page.url, primaryHint, secondaryHint)) {
+            return false;
+        }
+        return savePage(page, false);
     }
 
 

@@ -5,12 +5,16 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.net.Socket;
+
 public final class BypassManager {
     private static final BypassManager INSTANCE = new BypassManager();
 
     private final BypassStateStore stateStore = new BypassStateStore();
     @Nullable
     private Context appContext;
+    @Nullable
+    private volatile BypassDirectSocketProtector directSocketProtector;
 
     private BypassManager() {
     }
@@ -56,6 +60,15 @@ public final class BypassManager {
         Context context = requireContext();
         updateState(BypassMode.DIRECT, BypassStage.STOPPING, null);
         BypassServiceManager.stop(context);
+    }
+
+    public void setDirectSocketProtector(@Nullable BypassDirectSocketProtector directSocketProtector) {
+        this.directSocketProtector = directSocketProtector;
+    }
+
+    public boolean protectSocket(@NonNull Socket socket) {
+        BypassDirectSocketProtector protector = directSocketProtector;
+        return protector != null && protector.protectSocket(socket);
     }
 
     @NonNull

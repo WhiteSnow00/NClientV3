@@ -21,6 +21,7 @@ import com.maxwai.nclientv3.api.enums.TagStatus;
 import com.maxwai.nclientv3.api.enums.TagType;
 import com.maxwai.nclientv3.api.local.LocalGallery;
 import com.maxwai.nclientv3.async.database.Queries;
+import com.maxwai.nclientv3.bypass.BypassNetworkController;
 import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
@@ -354,8 +355,25 @@ public class InspectorV3 extends Thread implements Parcelable {
         LogUtility.d("Starting download: " + url);
         if (response != null) response.onStart();
         try {
-            createDocument();
-            parseDocument();
+            boolean bypassRetried = false;
+            while (true) {
+                try {
+                    createDocument();
+                    parseDocument();
+                    break;
+                } catch (InvalidResponseException invalidResponseException) {
+                    if (bypassRetried || !BypassNetworkController.getInstance().prepareInvalidContentRetry(
+                        url,
+                        htmlDocument == null ? null : htmlDocument.title(),
+                        htmlDocument == null || htmlDocument.body() == null ? null : htmlDocument.body().text()
+                    )) {
+                        throw invalidResponseException;
+                    }
+                    bypassRetried = true;
+                    htmlDocument = null;
+                    galleries = null;
+                }
+            }
             if (response != null) {
                 response.onSuccess(galleries);
             }

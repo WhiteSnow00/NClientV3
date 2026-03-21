@@ -34,6 +34,12 @@
 
         <activity android:name=".StatusManagerActivity" />
         <activity
+            android:name=".bypass.BypassPermissionActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:theme="@style/BypassPermissionTheme" />
+        <activity
             android:name=".PINActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true">
