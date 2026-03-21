@@ -173,6 +173,22 @@ struct params {
     int pid_fd;
 };
 
+#define PARAMS_INITIALIZER { \
+    .await_int = 10, \
+    .ipv6 = true, \
+    .resolve = true, \
+    .udp = true, \
+    .max_open = 512, \
+    .bfsize = 16384, \
+    .baddr = { \
+        .in6 = { .sin6_family = AF_INET6 } \
+    }, \
+    .laddr = { \
+        .in = { .sin_family = AF_INET } \
+    }, \
+    .debug = 0 \
+}
+
 extern struct params params;
 
 extern struct packet fake_tls;

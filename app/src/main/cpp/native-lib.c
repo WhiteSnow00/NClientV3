@@ -18,25 +18,10 @@ static JavaVM *g_java_vm = NULL;
 static jobject g_proxy_bridge = NULL;
 static jmethodID g_protect_method = NULL;
 
-struct params default_params = {
-        .await_int = 10,
-        .cache_ttl = 100800,
-        .ipv6 = 1,
-        .resolve = 1,
-        .udp = 1,
-        .max_open = 512,
-        .bfsize = 16384,
-        .baddr = {
-            .in6 = { .sin6_family = AF_INET6 }
-        },
-        .laddr = {
-            .in = { .sin_family = AF_INET }
-        },
-        .debug = 0
-};
+static const struct params default_params = PARAMS_INITIALIZER;
 
 void reset_params(void) {
-    clear_params();
+    clear_params(NULL, NULL);
     params = default_params;
 }
 
@@ -85,7 +70,7 @@ int android_protect_socket(int fd) {
     }
 
     if ((*g_java_vm)->GetEnv(g_java_vm, (void **) &env, JNI_VERSION_1_6) != JNI_OK) {
-        if ((*g_java_vm)->AttachCurrentThread(g_java_vm, (void **) &env, NULL) != JNI_OK) {
+        if ((*g_java_vm)->AttachCurrentThread(g_java_vm, &env, NULL) != JNI_OK) {
             return -1;
         }
         detach = 1;

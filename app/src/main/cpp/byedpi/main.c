@@ -44,22 +44,7 @@ fake_udp = {
 };
 
 
-struct params params = {
-    .await_int = 10,
-    
-    .ipv6 = 1,
-    .resolve = 1,
-    .udp = 1,
-    .max_open = 512,
-    .bfsize = 16384,
-    .baddr = {
-        .in6 = { .sin6_family = AF_INET6 }
-    },
-    .laddr = {
-        .in = { .sin_family = AF_INET }
-    },
-    .debug = 0
-};
+struct params params = PARAMS_INITIALIZER;
 
 
 static const char help_text[] = {
