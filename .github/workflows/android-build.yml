@@ -14,6 +14,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      ANDROID_BUILD_TOOLS: "36.0.0"
+      ANDROID_CMAKE: "3.22.1"
+      ANDROID_NDK: "29.0.14206865"
 
     steps:
       - name: Checkout
@@ -28,6 +33,17 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: gradle
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;${ANDROID_BUILD_TOOLS}" \
+            "cmake;${ANDROID_CMAKE}" \
+            "ndk;${ANDROID_NDK}"
 
       - name: Grant execute permission for Gradle wrapper
         run: chmod +x ./gradlew

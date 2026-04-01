@@ -8,6 +8,7 @@ if (hasKeystore) {
 }
 
 android {
+    ndkVersion '29.0.14206865'
     signingConfigs {
         release {
             if (hasKeystore) {
