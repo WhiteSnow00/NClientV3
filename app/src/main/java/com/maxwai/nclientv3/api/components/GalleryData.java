@@ -117,7 +117,7 @@ public class GalleryData implements Parcelable {
                     pageCount = jr.nextInt();
                     break;
                 case "media_id":
-                    mediaId = jr.nextInt();
+                    mediaId = readFlexibleInt(jr);
                     break;
                 case "id":
                     id = jr.nextInt();
@@ -141,6 +141,26 @@ public class GalleryData implements Parcelable {
             }
         }
         jr.endObject();
+    }
+
+    private int readFlexibleInt(JsonReader jr) throws IOException {
+        JsonToken token = jr.peek();
+        switch (token) {
+            case NUMBER:
+                return jr.nextInt();
+            case STRING:
+                try {
+                    return Integer.parseInt(jr.nextString());
+                } catch (NumberFormatException ignore) {
+                    return 0;
+                }
+            case NULL:
+                jr.nextNull();
+                return 0;
+            default:
+                jr.skipValue();
+                return 0;
+        }
     }
 
     private void setTitle(TitleType type, String title) {

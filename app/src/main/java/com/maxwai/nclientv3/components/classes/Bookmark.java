@@ -15,6 +15,7 @@ import com.maxwai.nclientv3.api.enums.TagType;
 import com.maxwai.nclientv3.async.database.Queries;
 
 import java.util.Collections;
+import java.util.Objects;
 
 public class Bookmark {
     public final String url;
@@ -38,6 +39,7 @@ public class Bookmark {
 
     public InspectorV3 createInspector(Context context, InspectorV3.InspectorResponse response) {
         String query = uri.getQueryParameter("q");
+        if (query == null) query = uri.getQueryParameter("query");
         SortType popular = SortType.findFromAddition(uri.getQueryParameter("sort"));
         if (requestType == ApiRequestType.FAVORITE)
             return InspectorV3.favoriteInspector(context, query, page, response);
@@ -62,7 +64,7 @@ public class Bookmark {
         if (requestType == ApiRequestType.FAVORITE) return "Favorite";
         if (requestType == ApiRequestType.BYSEARCH)
             //noinspection ConcatenationWithEmptyString
-            return "" + uri.getQueryParameter("q");
+            return "" + Objects.requireNonNullElse(uri.getQueryParameter("q"), uri.getQueryParameter("query"));
         if (requestType == ApiRequestType.BYALL) return "Main page";
         return "WTF";
     }

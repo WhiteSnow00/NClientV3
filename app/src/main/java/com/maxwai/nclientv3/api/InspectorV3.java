@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 
 import com.maxwai.nclientv3.api.components.Gallery;
 import com.maxwai.nclientv3.api.components.GenericGallery;
+import com.maxwai.nclientv3.api.components.Page;
 import com.maxwai.nclientv3.api.components.Ranges;
 import com.maxwai.nclientv3.api.components.Tag;
 import com.maxwai.nclientv3.api.enums.ApiRequestType;
@@ -26,10 +27,9 @@ import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -64,13 +64,15 @@ public class InspectorV3 extends Thread implements Parcelable {
     private boolean custom;
     private int page, pageCount = -1, id;
     private String query, url;
+    private String browserUrl;
     private ApiRequestType requestType;
     private Set<Tag> tags;
     private ArrayList<GenericGallery> galleries = null;
     private Ranges ranges = null;
     private InspectorResponse response;
     private WeakReference<Context> context;
-    private Document htmlDocument;
+    private String rawResponse;
+    private String responseContentType;
 
     protected InspectorV3(Parcel in) {
         sortType = SortType.values()[in.readByte()];
@@ -104,6 +106,7 @@ public class InspectorV3 extends Thread implements Parcelable {
         } else {
             ranges = in.readParcelable(Ranges.class.getClassLoader());
         }
+        createUrl();
     }
 
     private InspectorV3(Context context, InspectorResponse response) {
@@ -240,7 +243,10 @@ public class InspectorV3 extends Thread implements Parcelable {
     public String getSearchTitle() {
         //triggered only when in searchMode
         if (!query.isEmpty()) return query;
-        return url.replace(Utility.getBaseUrl() + "search/?q=", "").replace('+', ' ');
+        String searchQuery = null;
+        if (browserUrl != null) searchQuery = Uri.parse(browserUrl).getQueryParameter("q");
+        if (searchQuery == null && url != null) searchQuery = Uri.parse(url).getQueryParameter("query");
+        return searchQuery == null ? "" : searchQuery.replace('+', ' ');
     }
 
     public void initialize(Context context, InspectorResponse response) {
@@ -255,7 +261,6 @@ public class InspectorV3 extends Thread implements Parcelable {
     public InspectorV3 cloneInspector(Context context, InspectorResponse response) {
         InspectorV3 inspectorV3 = new InspectorV3(context, response);
         inspectorV3.query = query;
-        inspectorV3.url = url;
         inspectorV3.tags = tags;
         inspectorV3.requestType = requestType;
         inspectorV3.sortType = sortType;
@@ -264,6 +269,7 @@ public class InspectorV3 extends Thread implements Parcelable {
         inspectorV3.id = id;
         inspectorV3.custom = custom;
         inspectorV3.ranges = ranges;
+        inspectorV3.createUrl();
         return inspectorV3;
     }
 
@@ -274,73 +280,140 @@ public class InspectorV3 extends Thread implements Parcelable {
         }
     }
 
-    private void createUrl() {
-        String query;
+    @NonNull
+    private String encodeQueryParameter(String value) {
+        if (value == null || value.isEmpty()) return "";
         try {
-            query = this.query == null ? null : URLEncoder.encode(this.query, Charset.defaultCharset().name());
+            return URLEncoder.encode(value, Charset.defaultCharset().name()).replace("%20", "+");
         } catch (UnsupportedEncodingException ignore) {
-            query = this.query;
+            return value.replace(' ', '+');
         }
-        StringBuilder builder = new StringBuilder(Utility.getBaseUrl());
-        if (requestType == ApiRequestType.BYALL) builder.append("?page=").append(page);
-        else if (requestType == ApiRequestType.RANDOM) builder.append("random/");
-        else if (requestType == ApiRequestType.RANDOM_FAVORITE) builder.append("favorites/random");
-        else if (requestType == ApiRequestType.BYSINGLE) builder.append("g/").append(id);
-        else if (requestType == ApiRequestType.FAVORITE) {
-            builder.append("favorites/");
-            if (query != null && !query.isEmpty())
-                builder.append("?q=").append(query).append('&');
-            else builder.append('?');
-            builder.append("page=").append(page);
-        } else if (requestType == ApiRequestType.BYSEARCH || requestType == ApiRequestType.BYTAG) {
-            builder.append("search/?q=").append(query);
+    }
+
+    @NonNull
+    private String createRawSearchQuery() {
+        StringBuilder builder = new StringBuilder();
+        if (query != null && !query.trim().isEmpty()) builder.append(query.trim());
+        if (tags != null) {
             for (Tag tt : tags) {
-                if (builder.toString().contains(tt.toQueryTag(TagStatus.ACCEPTED))) continue;
-                builder.append('+');
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    builder.append(URLEncoder.encode(tt.toQueryTag(), Charset.defaultCharset()));
-                } else {
-                    try {
-                        //noinspection CharsetObjectCanBeUsed
-                        builder.append(URLEncoder.encode(tt.toQueryTag(), Charset.defaultCharset().name()));
-                    } catch (UnsupportedEncodingException e) {
-                        LogUtility.wtf("This should not happen since we used the default charset", e);
-                        return;
-                    }
-                }
-            }
-            if (ranges != null)
-                builder.append('+').append(ranges.toQuery());
-            builder.append("&page=").append(page);
-            if (sortType.getUrlAddition() != null) {
-                builder.append("&sort=").append(sortType.getUrlAddition());
+                String tagQuery = tt.toQueryTag();
+                if (tagQuery == null || tagQuery.isEmpty()) continue;
+                if (builder.indexOf(tt.toQueryTag(TagStatus.ACCEPTED)) >= 0) continue;
+                if (builder.length() > 0) builder.append(' ');
+                builder.append(tagQuery);
             }
         }
-        url = builder.toString().replace(' ', '+');
-        LogUtility.d("WWW: " + getBookmarkURL());
+        if (ranges != null && !ranges.isDefault()) {
+            if (builder.length() > 0) builder.append(' ');
+            builder.append(ranges.toQuery());
+        }
+        return builder.toString().trim();
+    }
+
+    private void appendSortParameter(StringBuilder builder) {
+        if (sortType != null && sortType.getUrlAddition() != null) {
+            builder.append("&sort=").append(sortType.getUrlAddition());
+        }
+    }
+
+    @NonNull
+    private String buildDetailUrl(int galleryId) {
+        return Utility.getBaseUrl() + "api/v2/galleries/" + galleryId + "?include=related";
+    }
+
+    @NonNull
+    private String buildFavoritesUrl(int page, @Nullable String rawQuery) {
+        StringBuilder builder = new StringBuilder(Utility.getBaseUrl()).append("api/v2/favorites?");
+        String encodedQuery = encodeQueryParameter(rawQuery);
+        if (!encodedQuery.isEmpty()) builder.append("query=").append(encodedQuery).append('&');
+        builder.append("page=").append(page);
+        appendSortParameter(builder);
+        return builder.toString();
+    }
+
+    private void createUrl() {
+        String encodedSearchQuery = encodeQueryParameter(createRawSearchQuery());
+        StringBuilder requestBuilder = new StringBuilder(Utility.getBaseUrl());
+        StringBuilder browserBuilder = new StringBuilder(Utility.getBaseUrl());
+
+        if (requestType == ApiRequestType.BYALL) {
+            requestBuilder.append("api/v2/galleries?page=").append(page);
+            browserBuilder.append("?page=").append(page);
+        } else if (requestType == ApiRequestType.RANDOM) {
+            requestBuilder.append("api/v2/galleries/random");
+            browserBuilder.append("random/");
+        } else if (requestType == ApiRequestType.RANDOM_FAVORITE) {
+            requestBuilder = new StringBuilder(buildFavoritesUrl(1, null));
+            browserBuilder.append("favorites/random");
+        } else if (requestType == ApiRequestType.BYSINGLE) {
+            requestBuilder.append("api/v2/galleries/").append(id).append("?include=related");
+            browserBuilder.append("g/").append(id).append('/');
+        } else if (requestType == ApiRequestType.FAVORITE) {
+            requestBuilder.append("api/v2/favorites?");
+            if (!encodedSearchQuery.isEmpty()) requestBuilder.append("query=").append(encodedSearchQuery).append('&');
+            requestBuilder.append("page=").append(page);
+            appendSortParameter(requestBuilder);
+
+            browserBuilder.append("favorites/");
+            if (!encodedSearchQuery.isEmpty()) browserBuilder.append("?q=").append(encodedSearchQuery).append('&');
+            else browserBuilder.append('?');
+            browserBuilder.append("page=").append(page);
+            appendSortParameter(browserBuilder);
+        } else if (requestType == ApiRequestType.BYSEARCH || requestType == ApiRequestType.BYTAG) {
+            requestBuilder.append("api/v2/search?query=").append(encodedSearchQuery).append("&page=").append(page);
+            appendSortParameter(requestBuilder);
+
+            browserBuilder.append("search/?q=").append(encodedSearchQuery).append("&page=").append(page);
+            appendSortParameter(browserBuilder);
+        }
+        url = requestBuilder.toString().replace(' ', '+');
+        browserUrl = browserBuilder.toString().replace(' ', '+');
+        LogUtility.d("Request URL: " + url);
+        LogUtility.d("Browser URL: " + getBookmarkURL());
     }
 
     private String getBookmarkURL() {
-        if (page < 2) return url;
-        else return url.substring(0, url.lastIndexOf('=') + 1);
+        if (browserUrl == null || page < 2 || browserUrl.lastIndexOf('=') < 0) return browserUrl;
+        return browserUrl.substring(0, browserUrl.lastIndexOf('=') + 1);
     }
 
-    public boolean createDocument() throws IOException {
-        if (htmlDocument != null) return true;
-        try (Response response = Global.getClient(context.get()).newCall(new Request.Builder().url(url).build()).execute()) {
-            setHtmlDocument(Jsoup.parse(response.body().byteStream(), "UTF-8", Utility.getBaseUrl()));
-            return response.code() == HttpURLConnection.HTTP_OK;
+    private static final class ResponsePayload {
+        private final int code;
+        @Nullable
+        private final String contentType;
+        @NonNull
+        private final String body;
+
+        private ResponsePayload(int code, @Nullable String contentType, @NonNull String body) {
+            this.code = code;
+            this.contentType = contentType;
+            this.body = body;
         }
     }
 
-    public void parseDocument() throws IOException, InvalidResponseException {
-        if (requestType.isSingle()) doSingle(htmlDocument.body());
-        else doSearch(htmlDocument.body());
-        htmlDocument = null;
+    public boolean createDocument() throws IOException, InvalidResponseException {
+        ResponsePayload payload;
+        if (requestType == ApiRequestType.RANDOM) {
+            payload = fetchRandomDetailPayload();
+        } else if (requestType == ApiRequestType.RANDOM_FAVORITE) {
+            payload = fetchRandomFavoriteDetailPayload();
+        } else {
+            payload = performRequest(url);
+        }
+        rawResponse = payload.body;
+        responseContentType = payload.contentType;
+        if (!looksLikeJson(payload)) {
+            throw new InvalidResponseException("Unexpected response type: " + payload.contentType);
+        }
+        return payload.code == HttpURLConnection.HTTP_OK;
     }
 
-    public void setHtmlDocument(Document htmlDocument) {
-        this.htmlDocument = htmlDocument;
+    public void parseDocument() throws InvalidResponseException {
+        JSONObject responseObject = parseJsonObject(rawResponse);
+        if (requestType.isSingle()) doSingleV2(responseObject);
+        else doSearchV2(responseObject);
+        rawResponse = null;
+        responseContentType = null;
     }
 
     @Override
@@ -364,13 +437,14 @@ public class InspectorV3 extends Thread implements Parcelable {
                 } catch (InvalidResponseException invalidResponseException) {
                     if (bypassRetried || !BypassNetworkController.getInstance().prepareInvalidContentRetry(
                         url,
-                        htmlDocument == null ? null : htmlDocument.title(),
-                        htmlDocument == null || htmlDocument.body() == null ? null : htmlDocument.body().text()
+                        responseContentType,
+                        rawResponse
                     )) {
                         throw invalidResponseException;
                     }
                     bypassRetried = true;
-                    htmlDocument = null;
+                    rawResponse = null;
+                    responseContentType = null;
                     galleries = null;
                 }
             }
@@ -382,6 +456,62 @@ public class InspectorV3 extends Thread implements Parcelable {
         }
         if (response != null) response.onEnd();
         LogUtility.d("Finished download: " + url);
+    }
+
+    @NonNull
+    private ResponsePayload performRequest(@NonNull String requestUrl) throws IOException {
+        try (Response response = Global.getClient(context.get()).newCall(new Request.Builder().url(requestUrl).build()).execute()) {
+            String body = response.body() == null ? "" : response.body().string();
+            return new ResponsePayload(response.code(), response.header("Content-Type"), body);
+        }
+    }
+
+    private boolean looksLikeJson(@NonNull ResponsePayload payload) {
+        if (payload.contentType != null && payload.contentType.toLowerCase().contains("json")) return true;
+        String trimmed = payload.body.trim();
+        return trimmed.startsWith("{") || trimmed.startsWith("[");
+    }
+
+    @NonNull
+    private JSONObject parseJsonObject(@Nullable String payload) throws InvalidResponseException {
+        if (payload == null || payload.trim().isEmpty()) throw new InvalidResponseException("Empty response body");
+        try {
+            return new JSONObject(payload);
+        } catch (JSONException e) {
+            throw new InvalidResponseException("Invalid JSON", e);
+        }
+    }
+
+    @NonNull
+    private JSONObject performJsonRequest(@NonNull String requestUrl) throws IOException, InvalidResponseException {
+        ResponsePayload payload = performRequest(requestUrl);
+        if (!looksLikeJson(payload)) {
+            throw new InvalidResponseException("Unexpected response type: " + payload.contentType);
+        }
+        return parseJsonObject(payload.body);
+    }
+
+    @NonNull
+    private ResponsePayload fetchRandomDetailPayload() throws IOException, InvalidResponseException {
+        JSONObject json = performJsonRequest(Utility.getBaseUrl() + "api/v2/galleries/random");
+        int galleryId = optInt(json, "id");
+        if (galleryId <= 0) throw new InvalidResponseException("Random gallery endpoint returned no id");
+        return performRequest(buildDetailUrl(galleryId));
+    }
+
+    @NonNull
+    private ResponsePayload fetchRandomFavoriteDetailPayload() throws IOException, InvalidResponseException {
+        JSONObject favoritesPage = performJsonRequest(buildFavoritesUrl(1, null));
+        int totalPages = findTotalV2(favoritesPage);
+        int selectedPage = totalPages <= 1 ? 1 : Utility.RANDOM.nextInt(totalPages) + 1;
+        JSONObject sourcePage = selectedPage == 1 ? favoritesPage : performJsonRequest(buildFavoritesUrl(selectedPage, null));
+        JSONArray galleriesArray = findGalleryArray(sourcePage, "result", "galleries", "items");
+        if (galleriesArray.length() == 0) throw new InvalidResponseException("Favorite random request returned no galleries");
+        int selectedIndex = Utility.RANDOM.nextInt(galleriesArray.length());
+        JSONObject chosenGallery = galleriesArray.optJSONObject(selectedIndex);
+        int galleryId = chosenGallery == null ? 0 : optInt(chosenGallery, "id");
+        if (galleryId <= 0) throw new InvalidResponseException("Favorite random gallery item returned no id");
+        return performRequest(buildDetailUrl(galleryId));
     }
 
     private void filterDocumentTags() {
@@ -398,63 +528,361 @@ public class InspectorV3 extends Thread implements Parcelable {
         galleries.addAll(galleryTag);
     }
 
-    private void doSingle(Element document) throws IOException, InvalidResponseException {
-        galleries = new ArrayList<>(1);
-        Elements scripts = document.getElementsByTag("script");
-        if (scripts.isEmpty())
-            throw new InvalidResponseException();
-        String json = trimScriptTag(scripts.get(1).html());
-        if (json == null)
-            throw new InvalidResponseException();
-        Element relContainer = document.getElementById("related-container");
-        Elements rel;
-        if (relContainer != null)
-            rel = relContainer.getElementsByClass("gallery");
-        else
-            rel = new Elements();
-        boolean isFavorite;
+    private void doSingleV2(JSONObject responseObject) throws InvalidResponseException {
+        JSONObject rootData = unwrapDataObject(responseObject);
+        JSONObject v2Data = rootData.optJSONObject("gallery");
+        if (v2Data == null) v2Data = rootData;
         try {
-            isFavorite = Objects.requireNonNull(document.getElementById("favorite")).getElementsByTag("span").get(0).text().equals("Unfavorite");
-        } catch (Exception e) {
-            isFavorite = false;
+            JSONArray relatedArray = findGalleryArray(rootData, "related", "related_galleries", "relatedGalleries");
+            if (relatedArray.length() == 0 && v2Data != rootData) {
+                relatedArray = findGalleryArray(v2Data, "related", "related_galleries", "relatedGalleries");
+            }
+            ArrayList<SimpleGallery> relatedGalleries = new ArrayList<>(relatedArray.length());
+            for (int i = 0; i < relatedArray.length(); i++) {
+                JSONObject related = relatedArray.optJSONObject(i);
+                if (related != null) relatedGalleries.add(SimpleGallery.fromV2ListItem(context.get(), related));
+            }
+
+            boolean isFavorite = requestType == ApiRequestType.RANDOM_FAVORITE ||
+                optBoolean(rootData, "is_favorite", "favorite", "favorited") ||
+                optBoolean(v2Data, "is_favorite", "favorite", "favorited");
+
+            galleries = new ArrayList<>(1);
+            galleries.add(new Gallery(context.get(), convertV2DetailToLegacy(v2Data).toString(), relatedGalleries, isFavorite));
+        } catch (IOException | JSONException e) {
+            throw new InvalidResponseException("Unable to parse gallery detail", e);
         }
-        LogUtility.d("is favorite? " + isFavorite);
-        galleries.add(new Gallery(context.get(), json, rel, isFavorite));
+    }
+
+    @NonNull
+    private JSONObject convertV2DetailToLegacy(@NonNull JSONObject v2Data) throws JSONException {
+        JSONObject legacy = new JSONObject();
+
+        int idValue = optInt(v2Data, "id");
+        if (idValue > 0) legacy.put("id", idValue);
+
+        Object mediaValue = v2Data.opt("media_id");
+        if (mediaValue != null && mediaValue != JSONObject.NULL) {
+            legacy.put("media_id", String.valueOf(mediaValue));
+        }
+
+        long uploadDateValue = optLong(v2Data, "upload_date", "created_at");
+        if (uploadDateValue > 0) legacy.put("upload_date", uploadDateValue);
+
+        int favoriteCountValue = optInt(v2Data, "num_favorites", "favorite_count", "favorites", "total_favorites");
+        if (favoriteCountValue >= 0) legacy.put("num_favorites", favoriteCountValue);
+
+        int pageCountValue = optInt(v2Data, "num_pages", "pages_count", "page_count", "total_pages");
+        if (pageCountValue >= 0) legacy.put("num_pages", pageCountValue);
+
+        legacy.put("title", buildLegacyTitle(v2Data));
+        legacy.put("tags", buildLegacyTags(v2Data));
+        legacy.put("images", buildLegacyImages(v2Data));
+
+        Object errorValue = v2Data.opt("error");
+        if (errorValue != null && errorValue != JSONObject.NULL) legacy.put("error", errorValue);
+        return legacy;
+    }
+
+    @NonNull
+    private JSONObject buildLegacyTitle(@NonNull JSONObject source) throws JSONException {
+        JSONObject title = new JSONObject();
+        JSONObject currentTitle = source.optJSONObject("title");
+
+        String english = firstNonEmpty(
+            currentTitle == null ? null : currentTitle.optString("english"),
+            source.optString("english_title"),
+            source.optString("title_english")
+        );
+        String japanese = firstNonEmpty(
+            currentTitle == null ? null : currentTitle.optString("japanese"),
+            source.optString("japanese_title"),
+            source.optString("title_japanese")
+        );
+        String pretty = firstNonEmpty(
+            currentTitle == null ? null : currentTitle.optString("pretty"),
+            source.optString("pretty_title"),
+            source.optString("title"),
+            english,
+            japanese
+        );
+
+        title.put("english", english);
+        title.put("japanese", japanese);
+        title.put("pretty", pretty);
+        return title;
+    }
+
+    @NonNull
+    private JSONArray buildLegacyTags(@NonNull JSONObject source) throws JSONException {
+        JSONArray legacyTags = new JSONArray();
+        JSONArray tagsArray = source.optJSONArray("tags");
+        if (tagsArray != null) {
+            for (int i = 0; i < tagsArray.length(); i++) {
+                Object value = tagsArray.opt(i);
+                if (value instanceof JSONObject) {
+                    legacyTags.put(normalizeLegacyTag((JSONObject) value));
+                } else {
+                    int tagId = optInt(tagsArray, i);
+                    if (tagId > 0) legacyTags.put(tagToJson(tagId, null));
+                }
+            }
+        }
+
+        if (legacyTags.length() > 0) return legacyTags;
+
+        JSONArray tagIds = source.optJSONArray("tag_ids");
+        if (tagIds == null) return legacyTags;
+        for (int i = 0; i < tagIds.length(); i++) {
+            int tagId = optInt(tagIds, i);
+            if (tagId > 0) legacyTags.put(tagToJson(tagId, null));
+        }
+        return legacyTags;
+    }
+
+    @NonNull
+    private JSONObject normalizeLegacyTag(@NonNull JSONObject sourceTag) throws JSONException {
+        int tagId = optInt(sourceTag, "id");
+        Tag dbTag = tagId > 0 ? Queries.TagTable.getTagById(tagId) : null;
+        return tagToJson(tagId, dbTag != null ? dbTag : new Tag(
+            firstNonEmpty(sourceTag.optString("name"), "unknown"),
+            optInt(sourceTag, "count"),
+            tagId,
+            TagType.typeByName(firstNonEmpty(sourceTag.optString("type"), TagType.TAG.getSingle())),
+            TagStatus.DEFAULT
+        ));
+    }
+
+    @NonNull
+    private JSONObject tagToJson(int tagId, @Nullable Tag fallbackTag) throws JSONException {
+        Tag resolved = Queries.TagTable.getTagById(tagId);
+        if (resolved == null) resolved = fallbackTag;
+
+        JSONObject normalized = new JSONObject();
+        if (resolved != null) {
+            normalized.put("count", resolved.getCount());
+            normalized.put("type", resolved.getTypeSingleName());
+            normalized.put("id", resolved.getId());
+            normalized.put("name", resolved.getName());
+            return normalized;
+        }
+
+        normalized.put("count", 0);
+        normalized.put("type", TagType.TAG.getSingle());
+        normalized.put("id", tagId);
+        normalized.put("name", "unknown");
+        return normalized;
+    }
+
+    @NonNull
+    private JSONObject buildLegacyImages(@NonNull JSONObject source) throws JSONException {
+        JSONObject images = new JSONObject();
+        JSONObject sourceImages = source.optJSONObject("images");
+        images.put("cover", normalizeLegacyImage(sourceImages == null ? source.opt("cover") : sourceImages.opt("cover")));
+        images.put("thumbnail", normalizeLegacyImage(sourceImages == null ? source.opt("thumbnail") : sourceImages.opt("thumbnail")));
+
+        JSONArray pages = new JSONArray();
+        JSONArray sourcePages = sourceImages == null ? null : sourceImages.optJSONArray("pages");
+        if (sourcePages == null) sourcePages = source.optJSONArray("pages");
+        if (sourcePages != null) {
+            for (int i = 0; i < sourcePages.length(); i++) {
+                pages.put(normalizeLegacyImage(sourcePages.opt(i)));
+            }
+        }
+        images.put("pages", pages);
+        return images;
+    }
+
+    @NonNull
+    private JSONObject normalizeLegacyImage(@Nullable Object sourceImage) throws JSONException {
+        JSONObject normalized = new JSONObject();
+        if (sourceImage instanceof JSONObject) {
+            JSONObject imageObject = (JSONObject) sourceImage;
+            Object imageType = imageObject.opt("t");
+            if (imageType != null && imageType != JSONObject.NULL) normalized.put("t", imageType);
+            else normalized.put("t", deriveLegacyImageType(imageObject.optString("path")));
+
+            int width = optInt(imageObject, "w", "width");
+            if (width > 0) normalized.put("w", width);
+
+            int height = optInt(imageObject, "h", "height");
+            if (height > 0) normalized.put("h", height);
+        } else if (sourceImage instanceof String) {
+            normalized.put("t", deriveLegacyImageType((String) sourceImage));
+        } else {
+            normalized.put("t", "j");
+        }
+        if (!normalized.has("t")) normalized.put("t", "j");
+        return normalized;
+    }
+
+    @NonNull
+    private String deriveLegacyImageType(@Nullable String path) {
+        if (path == null || path.isEmpty()) return "j";
+        String fileName = path.substring(path.lastIndexOf('/') + 1);
+        int extensionIndex = fileName.indexOf('.');
+        if (extensionIndex >= 0) fileName = fileName.substring(extensionIndex + 1);
+        com.maxwai.nclientv3.api.enums.ImageExt ext = Objects.requireNonNullElse(
+            Page.stringToExt(fileName),
+            com.maxwai.nclientv3.api.enums.ImageExt.JPG
+        );
+        switch (ext) {
+            case PNG:
+                return "p";
+            case GIF:
+                return "g";
+            case WEBP:
+            case GIF_WEBP:
+            case JPG_WEBP:
+            case PNG_WEBP:
+            case WEBP_WEBP:
+                return "w";
+            case JPG:
+            default:
+                return "j";
+        }
+    }
+
+    private void doSearchV2(JSONObject responseObject) throws InvalidResponseException {
+        JSONObject source = unwrapDataObject(responseObject);
+        JSONArray galleryArray = findGalleryArray(source, "result", "galleries", "items");
+        galleries = new ArrayList<>(galleryArray.length());
+        try {
+            for (int i = 0; i < galleryArray.length(); i++) {
+                JSONObject galleryJson = galleryArray.optJSONObject(i);
+                if (galleryJson != null) galleries.add(SimpleGallery.fromV2ListItem(context.get(), galleryJson));
+            }
+        } catch (Exception e) {
+            throw new InvalidResponseException("Unable to parse gallery list", e);
+        }
+        pageCount = findTotalV2(source);
+        if (Global.isExactTagMatch()) filterDocumentTags();
+    }
+
+    private int findTotalV2(@NonNull JSONObject responseObject) {
+        JSONObject source = unwrapDataObject(responseObject);
+        int totalPages = optInt(source, "num_pages", "pages", "page_count", "total_pages", "last_page");
+        JSONObject pagination = source.optJSONObject("pagination");
+        JSONObject meta = source.optJSONObject("meta");
+        JSONObject result = source.optJSONObject("result");
+        if (totalPages <= 0 && pagination != null) {
+            totalPages = optInt(pagination, "pages", "page_count", "total_pages", "last_page");
+        }
+        if (totalPages <= 0 && meta != null) {
+            totalPages = optInt(meta, "pages", "page_count", "total_pages", "last_page");
+        }
+        if (totalPages <= 0 && result != null) {
+            totalPages = optInt(result, "pages", "page_count", "total_pages", "last_page");
+        }
+        if (totalPages <= 0) {
+            int totalItems = optInt(source, "total", "total_items", "count");
+            int perPage = optInt(source, "per_page", "page_size");
+            if (perPage <= 0 && pagination != null) perPage = optInt(pagination, "per_page", "page_size");
+            if (perPage <= 0 && meta != null) perPage = optInt(meta, "per_page", "page_size");
+            if (perPage > 0 && totalItems > 0) {
+                totalPages = (totalItems + perPage - 1) / perPage;
+            }
+        }
+        return totalPages > 0 ? totalPages : Math.max(1, page);
+    }
+
+    @NonNull
+    private JSONObject unwrapDataObject(@NonNull JSONObject responseObject) {
+        JSONObject data = responseObject.optJSONObject("data");
+        return data == null ? responseObject : data;
+    }
+
+    @NonNull
+    private JSONArray findGalleryArray(@NonNull JSONObject responseObject, String... keys) {
+        JSONObject source = unwrapDataObject(responseObject);
+        for (String key : keys) {
+            JSONArray value = extractGalleryArray(source.opt(key));
+            if (value != null) return value;
+        }
+        for (String key : keys) {
+            JSONArray value = extractGalleryArray(responseObject.opt(key));
+            if (value != null) return value;
+        }
+        return new JSONArray();
     }
 
     @Nullable
-    private String trimScriptTag(String scriptHtml) {
-        int s = scriptHtml.indexOf("parse");
-        if (s < 0) return null;
-        s += 7;
-        scriptHtml = scriptHtml.substring(s, scriptHtml.lastIndexOf(");") - 1);
-        scriptHtml = Utility.unescapeUnicodeString(scriptHtml);
-        if (scriptHtml.isEmpty()) return null;
-        return scriptHtml;
+    private JSONArray extractGalleryArray(@Nullable Object value) {
+        if (value instanceof JSONArray) return (JSONArray) value;
+        if (!(value instanceof JSONObject)) return null;
+
+        JSONObject object = (JSONObject) value;
+        JSONArray nested = object.optJSONArray("items");
+        if (nested != null) return nested;
+        nested = object.optJSONArray("result");
+        if (nested != null) return nested;
+        nested = object.optJSONArray("galleries");
+        if (nested != null) return nested;
+        nested = object.optJSONArray("data");
+        if (nested != null) return nested;
+        nested = object.optJSONArray("related");
+        return nested;
     }
 
-    private void doSearch(Element document) throws InvalidResponseException {
-        Elements gal = document.getElementsByClass("gallery");
-        galleries = new ArrayList<>(gal.size());
-        for (Element e : gal) galleries.add(new SimpleGallery(context.get(), e));
-        gal = document.getElementsByClass("last");
-        pageCount = gal.isEmpty()? Math.max(1, page) : findTotal(gal.last());
-        if (document.getElementById("content") == null)
-            throw new InvalidResponseException();
-        if (Global.isExactTagMatch())
-            filterDocumentTags();
-    }
-
-    private int findTotal(@Nullable Element e) {
-        if (e == null)
-            return 1;
-        String temp = e.attr("href");
-
-        try {
-            return Integer.parseInt(Objects.requireNonNull(Uri.parse(temp).getQueryParameter("page")));
-        } catch (Exception ignore) {
-            return 1;
+    private int optInt(@NonNull JSONObject source, String... keys) {
+        for (String key : keys) {
+            Object value = source.opt(key);
+            if (value instanceof Number) return ((Number) value).intValue();
+            if (value instanceof String) {
+                try {
+                    return Integer.parseInt((String) value);
+                } catch (NumberFormatException ignore) {
+                    return 0;
+                }
+            }
         }
+        return 0;
+    }
+
+    private long optLong(@NonNull JSONObject source, String... keys) {
+        for (String key : keys) {
+            Object value = source.opt(key);
+            if (value instanceof Number) return ((Number) value).longValue();
+            if (value instanceof String) {
+                try {
+                    return Long.parseLong((String) value);
+                } catch (NumberFormatException ignore) {
+                    return 0L;
+                }
+            }
+        }
+        return 0L;
+    }
+
+    private int optInt(@NonNull JSONArray source, int index) {
+        Object value = source.opt(index);
+        if (value instanceof Number) return ((Number) value).intValue();
+        if (value instanceof String) {
+            try {
+                return Integer.parseInt((String) value);
+            } catch (NumberFormatException ignore) {
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    private boolean optBoolean(@NonNull JSONObject source, String... keys) {
+        for (String key : keys) {
+            Object value = source.opt(key);
+            if (value instanceof Boolean) return (Boolean) value;
+            if (value instanceof String) return Boolean.parseBoolean((String) value);
+        }
+        return false;
+    }
+
+    @NonNull
+    private String firstNonEmpty(@Nullable String... values) {
+        if (values == null) return "";
+        for (String value : values) {
+            if (value != null && !value.isEmpty()) return value;
+        }
+        return "";
     }
 
     public void setSortType(SortType sortType) {
@@ -479,6 +907,10 @@ public class InspectorV3 extends Thread implements Parcelable {
         return url;
     }
 
+    public String getBrowserUrl() {
+        return browserUrl == null ? url : browserUrl;
+    }
+
     public ApiRequestType getRequestType() {
         return requestType;
     }
@@ -501,6 +933,14 @@ public class InspectorV3 extends Thread implements Parcelable {
     public static class InvalidResponseException extends Exception {
         public InvalidResponseException() {
             super();
+        }
+
+        public InvalidResponseException(String message) {
+            super(message);
+        }
+
+        public InvalidResponseException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 

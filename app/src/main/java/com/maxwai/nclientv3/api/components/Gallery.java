@@ -26,9 +26,6 @@ import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
 
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.Writer;
@@ -62,11 +59,10 @@ public class Gallery extends GenericGallery {
     private Language language = Language.UNKNOWN;
     private Size maxSize = new Size(0, 0), minSize = new Size(Integer.MAX_VALUE, Integer.MAX_VALUE);
 
-    public Gallery(Context context, String json, Elements related, boolean isFavorite) throws IOException {
+    public Gallery(Context context, String json, List<SimpleGallery> related, boolean isFavorite) throws IOException {
         LogUtility.d("Found JSON: " + json);
         JsonReader reader = new JsonReader(new StringReader(json));
-        this.related = new ArrayList<>(related.size());
-        for (Element e : related) this.related.add(new SimpleGallery(context, e));
+        this.related = related == null ? new ArrayList<>() : new ArrayList<>(related);
         galleryData = new GalleryData(reader);
         folder = GalleryFolder.fromId(context, galleryData.getId());
         calculateSizes(galleryData);

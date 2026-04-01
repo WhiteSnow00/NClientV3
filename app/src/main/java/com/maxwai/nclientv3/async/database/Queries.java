@@ -708,11 +708,11 @@ public class Queries {
         public static void addBookmark(InspectorV3 inspector) {
             Tag tag = inspector.getTag();
             ContentValues values = new ContentValues(4);
-            values.put(URL, inspector.getUrl());
+            values.put(URL, inspector.getBrowserUrl());
             values.put(PAGE, inspector.getPage());
             values.put(TYPE, inspector.getRequestType().ordinal());
             values.put(TAG_ID, tag == null ? 0 : tag.getId());
-            LogUtility.d("ADDED: " + inspector.getUrl());
+            LogUtility.d("ADDED: " + inspector.getBrowserUrl());
             db.insertWithOnConflict(TABLE_NAME, null, values, SQLiteDatabase.CONFLICT_IGNORE);
         }
 

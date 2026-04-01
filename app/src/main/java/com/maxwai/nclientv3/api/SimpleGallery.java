@@ -24,6 +24,8 @@ import com.maxwai.nclientv3.settings.Global;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jsoup.nodes.Element;
 
 import java.util.Collection;
@@ -57,7 +59,7 @@ public class SimpleGallery extends GenericGallery {
     }
 
     public boolean hasTags(Collection<Tag> tags) {
-        return this.tags.hasTags(tags);
+        return this.tags != null && this.tags.hasTags(tags);
     }
 
     @SuppressLint("Range")
@@ -85,11 +87,164 @@ public class SimpleGallery extends GenericGallery {
         if (context != null && id > Global.getMaxId()) Global.updateMaxId(context, id);
     }
 
+    private SimpleGallery(String title, int id, int mediaId, ImageExt thumbnail, Language language, TagList tags) {
+        this.title = title;
+        this.id = id;
+        this.mediaId = mediaId;
+        this.thumbnail = thumbnail == null ? ImageExt.JPG : thumbnail;
+        this.language = language == null ? Language.UNKNOWN : language;
+        this.tags = tags;
+    }
+
     public SimpleGallery(Gallery gallery) {
         title = gallery.getTitle();
         mediaId = gallery.getMediaId();
         id = gallery.getId();
         thumbnail = gallery.getThumb();
+    }
+
+    public static SimpleGallery fromV2ListItem(Context context, JSONObject json) {
+        String thumbnailPath = resolveThumbnailPath(json);
+        int galleryId = optInt(json, "id");
+        int mediaId = optInt(json, "media_id");
+        if (mediaId <= 0) mediaId = parseMediaId(thumbnailPath);
+
+        TagList tagList = parseTagList(json);
+        Language language = Gallery.loadLanguage(tagList);
+        String title = parseTitle(json);
+        ImageExt thumbExt = parseThumbnailExtension(thumbnailPath);
+
+        if (context != null && galleryId > Global.getMaxId()) {
+            Global.updateMaxId(context, galleryId);
+        }
+
+        return new SimpleGallery(title, galleryId, mediaId, thumbExt, language, tagList);
+    }
+
+    private static TagList parseTagList(JSONObject json) {
+        JSONArray tagIds = json.optJSONArray("tag_ids");
+        if (tagIds == null) {
+            tagIds = new JSONArray();
+            JSONArray tags = json.optJSONArray("tags");
+            if (tags != null) {
+                for (int i = 0; i < tags.length(); i++) {
+                    JSONObject tag = tags.optJSONObject(i);
+                    if (tag == null) continue;
+                    int tagId = optInt(tag, "id");
+                    if (tagId > 0) tagIds.put(tagId);
+                }
+            }
+        }
+
+        if (tagIds.length() == 0) return new TagList();
+
+        StringBuilder ids = new StringBuilder(tagIds.length() * 6);
+        for (int i = 0; i < tagIds.length(); i++) {
+            int tagId = optInt(tagIds, i);
+            if (tagId <= 0) continue;
+            if (ids.length() > 0) ids.append(',');
+            ids.append(tagId);
+        }
+        if (ids.length() == 0) return new TagList();
+        return Queries.TagTable.getTagsFromListOfInt(ids.toString());
+    }
+
+    private static String parseTitle(JSONObject json) {
+        String resolved = json.optString("english_title");
+        if (resolved.isEmpty()) resolved = json.optString("pretty_title");
+        if (resolved.isEmpty()) resolved = json.optString("title");
+        if (resolved.isEmpty()) {
+            JSONObject title = json.optJSONObject("title");
+            if (title != null) {
+                resolved = title.optString("english");
+                if (resolved.isEmpty()) resolved = title.optString("pretty");
+                if (resolved.isEmpty()) resolved = title.optString("japanese");
+            }
+        }
+        if (resolved.isEmpty()) resolved = json.optString("japanese_title");
+        return resolved.isEmpty() ? "Unnamed" : resolved;
+    }
+
+    private static String resolveThumbnailPath(JSONObject json) {
+        String path = extractPath(json.opt("thumbnail"));
+        if (path.isEmpty()) path = extractPath(json.opt("cover"));
+        if (path.isEmpty()) path = json.optString("thumbnail_path");
+        if (path.isEmpty()) path = json.optString("cover_path");
+        if (!path.isEmpty()) return path;
+
+        JSONObject images = json.optJSONObject("images");
+        if (images == null) return "";
+
+        path = extractPath(images.opt("thumbnail"));
+        if (path.isEmpty()) path = extractPath(images.opt("cover"));
+        if (path.isEmpty()) path = images.optString("thumbnail_path");
+        if (path.isEmpty()) path = images.optString("cover_path");
+        return path;
+    }
+
+    private static String extractPath(Object value) {
+        if (value instanceof String) return (String) value;
+        if (!(value instanceof JSONObject)) return "";
+
+        JSONObject object = (JSONObject) value;
+        String path = object.optString("path");
+        if (path.isEmpty()) path = object.optString("url");
+        if (path.isEmpty()) path = object.optString("src");
+        return path;
+    }
+
+    private static int parseMediaId(String thumbnailPath) {
+        if (thumbnailPath == null || thumbnailPath.isEmpty()) return 0;
+        int galleriesIndex = thumbnailPath.indexOf("/galleries/");
+        if (galleriesIndex < 0) return 0;
+        galleriesIndex += "/galleries/".length();
+        int end = thumbnailPath.indexOf('/', galleriesIndex);
+        if (end < 0) end = thumbnailPath.length();
+        try {
+            return Integer.parseInt(thumbnailPath.substring(galleriesIndex, end));
+        } catch (NumberFormatException ignore) {
+            return 0;
+        }
+    }
+
+    private static ImageExt parseThumbnailExtension(String thumbnailPath) {
+        if (thumbnailPath == null || thumbnailPath.isEmpty()) return ImageExt.JPG;
+        int fileStart = thumbnailPath.lastIndexOf('/') + 1;
+        String filename = thumbnailPath.substring(fileStart);
+        if (filename.startsWith("thumb.")) filename = filename.substring("thumb.".length());
+        ImageExt ext = Page.stringToExt(filename);
+        if (ext != null) return ext;
+
+        int dotIndex = thumbnailPath.lastIndexOf('.');
+        if (dotIndex < 0 || dotIndex >= thumbnailPath.length() - 1) return ImageExt.JPG;
+        ext = Page.stringToExt(thumbnailPath.substring(dotIndex + 1));
+        return ext == null ? ImageExt.JPG : ext;
+    }
+
+    private static int optInt(JSONObject json, String key) {
+        Object value = json.opt(key);
+        if (value instanceof Number) return ((Number) value).intValue();
+        if (value instanceof String) {
+            try {
+                return Integer.parseInt((String) value);
+            } catch (NumberFormatException ignore) {
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    private static int optInt(JSONArray jsonArray, int index) {
+        Object value = jsonArray.opt(index);
+        if (value instanceof Number) return ((Number) value).intValue();
+        if (value instanceof String) {
+            try {
+                return Integer.parseInt((String) value);
+            } catch (NumberFormatException ignore) {
+                return 0;
+            }
+        }
+        return 0;
     }
 
     private static String extToString(ImageExt ext) {
