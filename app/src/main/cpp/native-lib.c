@@ -4,6 +4,7 @@
 
 #include <jni.h>
 #include <getopt.h>
+#include <pthread.h>
 #include <signal.h>
 #include <setjmp.h>
 
@@ -17,8 +18,15 @@ static jmp_buf crash_jmp_buf;
 static JavaVM *g_java_vm = NULL;
 static jobject g_proxy_bridge = NULL;
 static jmethodID g_protect_method = NULL;
+static pthread_t g_proxy_thread;
+static int g_handlers_installed = 0;
+static struct sigaction g_prev_sigsegv;
+static struct sigaction g_prev_sigabrt;
+static struct sigaction g_prev_sigbus;
 
 static const struct params default_params = PARAMS_INITIALIZER;
+
+static void sigsegv_handler(int sig);
 
 void reset_params(void) {
     clear_params(NULL, NULL);
@@ -60,6 +68,41 @@ static int cache_bridge(JNIEnv *env, jobject thiz) {
     return 0;
 }
 
+static void restore_signal_handlers(void) {
+    if (!g_handlers_installed) {
+        return;
+    }
+    sigaction(SIGSEGV, &g_prev_sigsegv, NULL);
+    sigaction(SIGABRT, &g_prev_sigabrt, NULL);
+    sigaction(SIGBUS, &g_prev_sigbus, NULL);
+    g_handlers_installed = 0;
+}
+
+static int install_signal_handlers(void) {
+    struct sigaction sa;
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = sigsegv_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    if (sigaction(SIGSEGV, &sa, &g_prev_sigsegv) != 0) {
+        return -1;
+    }
+    if (sigaction(SIGABRT, &sa, &g_prev_sigabrt) != 0) {
+        sigaction(SIGSEGV, &g_prev_sigsegv, NULL);
+        return -1;
+    }
+    if (sigaction(SIGBUS, &sa, &g_prev_sigbus) != 0) {
+        sigaction(SIGSEGV, &g_prev_sigsegv, NULL);
+        sigaction(SIGABRT, &g_prev_sigabrt, NULL);
+        return -1;
+    }
+
+    g_handlers_installed = 1;
+    return 0;
+}
+
 int android_protect_socket(int fd) {
     JNIEnv *env = NULL;
     jboolean protected_ok = JNI_TRUE;
@@ -90,7 +133,11 @@ int android_protect_socket(int fd) {
 }
 
 static void sigsegv_handler(int sig) {
-    LOG(LOG_S, "SIGSEGV caught in native code, signal: %d", sig);
+    if (!pthread_equal(pthread_self(), g_proxy_thread)) {
+        restore_signal_handlers();
+        raise(sig);
+        return;
+    }
 
     if (sig == 11) {
         longjmp(crash_jmp_buf, 1);
@@ -120,19 +167,18 @@ Java_com_maxwai_nclientv3_bypass_ByeDpiProxyBridge_jniStartProxy(JNIEnv *env, jo
         return -1;
     }
 
-    struct sigaction sa;
-    sa.sa_handler = sigsegv_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-
-    sigaction(SIGSEGV, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGBUS, &sa, NULL);
+    g_proxy_thread = pthread_self();
+    if (install_signal_handlers() != 0) {
+        LOG(LOG_E, "failed to install native crash guards");
+        clear_bridge(env);
+        return -1;
+    }
 
     if (setjmp(crash_jmp_buf) != 0) {
         LOG(LOG_S, "crash proxy, continuing...");
         g_proxy_running = 0;
         reset_params();
+        restore_signal_handlers();
         clear_bridge(env);
         return 0;
     }
@@ -160,6 +206,7 @@ Java_com_maxwai_nclientv3_bypass_ByeDpiProxyBridge_jniStartProxy(JNIEnv *env, jo
     LOG(LOG_S, "proxy return code %d", result);
     g_proxy_running = 0;
     reset_params();
+    restore_signal_handlers();
     clear_bridge(env);
 
     return result;
@@ -177,6 +224,7 @@ Java_com_maxwai_nclientv3_bypass_ByeDpiProxyBridge_jniStopProxy(__attribute__((u
     shutdown(server_fd, SHUT_RDWR);
     g_proxy_running = 0;
     reset_params();
+    restore_signal_handlers();
 
     return 0;
 }

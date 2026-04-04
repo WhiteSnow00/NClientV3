@@ -28,6 +28,10 @@ public final class BypassManager {
         if (appContext != null) return;
         appContext = context.getApplicationContext();
         stateStore.initialize(new BypassPreferences(appContext));
+        BypassState restoredState = stateStore.get();
+        if (restoredState.getMode() != BypassMode.DIRECT || restoredState.getStage() != BypassStage.IDLE) {
+            stateStore.update(BypassState.idle());
+        }
     }
 
     @NonNull
@@ -58,8 +62,9 @@ public final class BypassManager {
 
     public void stop() {
         Context context = requireContext();
+        BypassMode activeMode = getState().getMode();
         updateState(BypassMode.DIRECT, BypassStage.STOPPING, null);
-        BypassServiceManager.stop(context);
+        BypassServiceManager.stop(context, activeMode);
     }
 
     public void setDirectSocketProtector(@Nullable BypassDirectSocketProtector directSocketProtector) {

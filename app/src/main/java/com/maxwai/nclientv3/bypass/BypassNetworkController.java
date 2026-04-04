@@ -4,6 +4,7 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.os.SystemClock;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -45,6 +46,7 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
     private static final long VPN_START_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(15);
     private static final long VPN_STOP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(8);
     private static final long DIRECT_PROBE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(3);
+    private static final long BYPASS_PROBE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(4);
     private static final long INVALID_CONTENT_WINDOW_MS = TimeUnit.MINUTES.toMillis(2);
     private static final long ACTIVATION_DEBOUNCE_MS = TimeUnit.SECONDS.toMillis(20);
     private static final long DIRECT_PROBE_BASE_COOLDOWN_MS = TimeUnit.MINUTES.toMillis(3);
@@ -87,7 +89,7 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
 
     public boolean shouldRetryWithBypass(@NonNull Request request, @NonNull IOException exception, boolean alreadyRetried) {
         String host = request.url().host();
-        if (alreadyRetried || !shouldManageHost(host) || !hasInternetConnectivity()) {
+        if (alreadyRetried || !isSafeRetryMethod(request.method()) || !shouldManageHost(host) || !hasInternetConnectivity()) {
             return false;
         }
         if (looksLikeCloudflareChallenge(exception.getMessage()) || !isBlockingFailure(exception)) {
@@ -99,7 +101,7 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
         if (!record.markActivationAttemptIfAllowed(now)) {
             return false;
         }
-        return ensureBypassForHost(host, record, "request failure");
+        return ensureBypassForHost(host, request.url().toString(), record, "request failure");
     }
 
     public boolean prepareInvalidContentRetry(@Nullable String url, @Nullable String primaryHint, @Nullable String secondaryHint) {
@@ -122,7 +124,7 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
         if (!record.markActivationAttemptIfAllowed(now)) {
             return false;
         }
-        return ensureBypassForHost(host, record, "invalid content");
+        return ensureBypassForHost(host, url, record, "invalid content");
     }
 
     @Nullable
@@ -171,9 +173,15 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
         waitForState(BypassMode.DIRECT, BypassStage.IDLE, VPN_STOP_TIMEOUT_MS);
     }
 
-    private boolean ensureBypassForHost(@NonNull String host, @NonNull HostAccessRecord record, @NonNull String reason) {
+    private boolean ensureBypassForHost(@NonNull String host, @Nullable String targetUrl, @NonNull HostAccessRecord record, @NonNull String reason) {
+        normalizeRuntimeState();
         BypassState state = BypassManager.getInstance().getState();
-        if (state.getMode() == BypassMode.VPN && state.getStage() == BypassStage.RUNNING) {
+        if (isVpnRunning()) {
+            if (!probeBypassConnection(targetUrl, host)) {
+                LogUtility.w("Bypass runtime is marked running but traffic probe failed for host ", host);
+                requestBypassShutdown();
+                return false;
+            }
             record.markBypassRequired(System.currentTimeMillis());
             BypassManager.getInstance().updateState(BypassMode.VPN, BypassStage.RUNNING, host);
             return true;
@@ -181,11 +189,16 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
 
         if (state.getMode() == BypassMode.VPN && state.getStage() == BypassStage.STARTING) {
             boolean running = waitForState(BypassMode.VPN, BypassStage.RUNNING, VPN_START_TIMEOUT_MS);
-            if (running) {
+            boolean reachable = running && probeBypassConnection(targetUrl, host);
+            if (reachable) {
                 record.markBypassRequired(System.currentTimeMillis());
                 BypassManager.getInstance().updateState(BypassMode.VPN, BypassStage.RUNNING, host);
+                return true;
             }
-            return running;
+            if (!running || !BypassRuntimeStatus.isVpnReady() || !reachable) {
+                requestBypassShutdown();
+            }
+            return false;
         }
 
         if (!BypassPermissionCoordinator.getInstance().ensurePermission(VPN_PERMISSION_TIMEOUT_MS)) {
@@ -198,6 +211,12 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
         boolean running = waitForState(BypassMode.VPN, BypassStage.RUNNING, VPN_START_TIMEOUT_MS);
         if (!running) {
             LogUtility.w("VPN bypass did not become ready in time for host ", host);
+            requestBypassShutdown();
+            return false;
+        }
+        if (!probeBypassConnection(targetUrl, host)) {
+            LogUtility.w("VPN bypass became ready but traffic still could not traverse the internal path for host ", host);
+            requestBypassShutdown();
             return false;
         }
 
@@ -207,8 +226,8 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
     }
 
     private boolean waitForState(@NonNull BypassMode mode, @NonNull BypassStage stage, long timeoutMs) {
-        long deadline = System.currentTimeMillis() + timeoutMs;
-        while (System.currentTimeMillis() < deadline) {
+        long deadline = SystemClock.elapsedRealtime() + timeoutMs;
+        while (SystemClock.elapsedRealtime() < deadline) {
             BypassState state = BypassManager.getInstance().getState();
             if (state.getMode() == mode && state.getStage() == stage) {
                 return true;
@@ -225,6 +244,28 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
         }
         BypassState state = BypassManager.getInstance().getState();
         return state.getMode() == mode && state.getStage() == stage;
+    }
+
+    private void normalizeRuntimeState() {
+        BypassState state = BypassManager.getInstance().getState();
+        if (state.getMode() == BypassMode.VPN && state.getStage() != BypassStage.IDLE && !BypassRuntimeStatus.isVpnServiceCreated()) {
+            BypassManager.getInstance().updateState(BypassMode.DIRECT, BypassStage.IDLE, null);
+            return;
+        }
+        if (state.getMode() == BypassMode.PROXY && state.getStage() != BypassStage.IDLE && !BypassRuntimeStatus.isProxyServiceCreated()) {
+            BypassManager.getInstance().updateState(BypassMode.DIRECT, BypassStage.IDLE, null);
+        }
+    }
+
+    private void requestBypassShutdown() {
+        BypassState state = BypassManager.getInstance().getState();
+        if (state.getMode() == BypassMode.DIRECT) {
+            return;
+        }
+        BypassManager.getInstance().stop();
+        if (!waitForState(BypassMode.DIRECT, BypassStage.IDLE, VPN_STOP_TIMEOUT_MS)) {
+            BypassManager.getInstance().updateState(BypassMode.DIRECT, BypassStage.IDLE, null);
+        }
     }
 
     private boolean probeDirectConnection(@NonNull Request request) {
@@ -255,19 +296,48 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
         }
     }
 
-    private boolean sendProbeRequest(@NonNull Socket socket, @NonNull Request request) throws IOException {
-        String path = request.url().encodedPath();
-        if (path == null || path.isEmpty()) {
-            path = "/";
-        }
-        String query = request.url().encodedQuery();
-        if (query != null && !query.isEmpty()) {
-            path = path + '?' + query;
+    private boolean probeBypassConnection(@Nullable String targetUrl, @NonNull String fallbackHost) {
+        URI uri = null;
+        if (targetUrl != null && !targetUrl.trim().isEmpty()) {
+            try {
+                uri = URI.create(targetUrl);
+            } catch (IllegalArgumentException ignored) {
+                uri = null;
+            }
         }
 
+        String scheme = uri != null && uri.getScheme() != null ? uri.getScheme() : "https";
+        String host = uri != null && uri.getHost() != null ? uri.getHost() : fallbackHost;
+        int port = uri != null && uri.getPort() > 0 ? uri.getPort() : ("http".equalsIgnoreCase(scheme) ? 80 : 443);
+        String path = buildRequestPath(uri);
+
+        try (Socket socket = new Socket()) {
+            socket.setSoTimeout((int) BYPASS_PROBE_TIMEOUT_MS);
+            socket.connect(new InetSocketAddress(host, port), (int) BYPASS_PROBE_TIMEOUT_MS);
+
+            if ("https".equalsIgnoreCase(scheme)) {
+                SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+                try (SSLSocket sslSocket = (SSLSocket) factory.createSocket(socket, host, port, true)) {
+                    sslSocket.setSoTimeout((int) BYPASS_PROBE_TIMEOUT_MS);
+                    sslSocket.startHandshake();
+                    return sendProbeRequest(sslSocket, host, path);
+                }
+            }
+            return sendProbeRequest(socket, host, path);
+        } catch (IOException e) {
+            LogUtility.d("Bypass traffic probe failed for host ", host, ": ", e.getClass().getSimpleName(), " ", e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean sendProbeRequest(@NonNull Socket socket, @NonNull Request request) throws IOException {
+        return sendProbeRequest(socket, request.url().host(), buildRequestPath(request));
+    }
+
+    private boolean sendProbeRequest(@NonNull Socket socket, @NonNull String host, @NonNull String path) throws IOException {
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.US_ASCII));
         writer.write("HEAD " + path + " HTTP/1.1\r\n");
-        writer.write("Host: " + request.url().host() + "\r\n");
+        writer.write("Host: " + host + "\r\n");
         writer.write("User-Agent: " + Global.getUserAgent() + "\r\n");
         writer.write("Connection: close\r\n");
         writer.write("\r\n");
@@ -276,6 +346,35 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.US_ASCII));
         String statusLine = reader.readLine();
         return statusLine != null && statusLine.startsWith("HTTP/");
+    }
+
+    @NonNull
+    private String buildRequestPath(@NonNull Request request) {
+        String path = request.url().encodedPath();
+        if (path == null || path.isEmpty()) {
+            path = "/";
+        }
+        String query = request.url().encodedQuery();
+        if (query != null && !query.isEmpty()) {
+            path = path + '?' + query;
+        }
+        return path;
+    }
+
+    @NonNull
+    private String buildRequestPath(@Nullable URI uri) {
+        if (uri == null) {
+            return "/";
+        }
+        String path = uri.getRawPath();
+        if (path == null || path.isEmpty()) {
+            path = "/";
+        }
+        String query = uri.getRawQuery();
+        if (query != null && !query.isEmpty()) {
+            path = path + '?' + query;
+        }
+        return path;
     }
 
     private boolean hasInternetConnectivity() {
@@ -309,7 +408,11 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
 
     private boolean isVpnRunning() {
         BypassState state = BypassManager.getInstance().getState();
-        return state.getMode() == BypassMode.VPN && state.getStage() == BypassStage.RUNNING;
+        return state.getMode() == BypassMode.VPN && state.getStage() == BypassStage.RUNNING && BypassRuntimeStatus.isVpnReady();
+    }
+
+    private boolean isSafeRetryMethod(@Nullable String method) {
+        return method != null && ("GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method));
     }
 
     private boolean hasBlockedHosts() {

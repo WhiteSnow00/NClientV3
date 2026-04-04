@@ -8,6 +8,7 @@ import android.content.pm.ServiceInfo;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.os.SystemClock;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,6 +31,8 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
     @Nullable
     private Thread startupThread;
     @Nullable
+    private Thread runtimeMonitorThread;
+    @Nullable
     private ParcelFileDescriptor tunFd;
     @Nullable
     private File tunConfigFile;
@@ -39,6 +42,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
     @Override
     public void onCreate() {
         super.onCreate();
+        BypassRuntimeStatus.markVpnServiceCreated();
         BypassNotificationHelper.ensureChannels(this);
         BypassManager.getInstance().initialize(this);
         BypassManager.getInstance().setDirectSocketProtector(this::protectDirectSocket);
@@ -66,6 +70,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
 
     @Override
     public void onDestroy() {
+        BypassRuntimeStatus.markVpnStopped();
         BypassManager.getInstance().setDirectSocketProtector(null);
         super.onDestroy();
     }
@@ -97,6 +102,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
             stopping = false;
         }
 
+        BypassRuntimeStatus.markVpnStarting();
         startForegroundCompat(
             BypassNotificationHelper.buildVpnNotification(
                 this,
@@ -107,6 +113,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
 
         BypassProxyConfig config = BypassProxyConfig.fromContext(this);
         if (!proxyRuntime.start(config, this, this::onProxyExit)) {
+            failAndStop("Local proxy runtime refused to start.");
             return;
         }
 
@@ -128,7 +135,13 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
                 failAndStop("Unable to establish tun2socks.");
                 return;
             }
+            if (!waitForTun2Socks(1500L)) {
+                failAndStop("tun2socks exited before VPN became ready.");
+                return;
+            }
             tunnelStarted = true;
+            BypassRuntimeStatus.markVpnReady();
+            startRuntimeMonitor();
             updateNotification(getString(R.string.bypass_notification_vpn_active));
             BypassManager.getInstance().updateState(BypassMode.VPN, BypassStage.RUNNING, null);
         } finally {
@@ -137,6 +150,42 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
                     startupThread = null;
                 }
             }
+        }
+    }
+
+    private boolean waitForTun2Socks(long timeoutMs) {
+        long deadline = SystemClock.elapsedRealtime() + timeoutMs;
+        while (SystemClock.elapsedRealtime() < deadline) {
+            if (stopping) {
+                return false;
+            }
+            if (TProxyService.TProxyIsRunning()) {
+                return true;
+            }
+            SystemClock.sleep(100L);
+        }
+        return TProxyService.TProxyIsRunning();
+    }
+
+    private void startRuntimeMonitor() {
+        synchronized (serviceLock) {
+            if (runtimeMonitorThread != null) {
+                return;
+            }
+            Thread thread = new Thread(() -> {
+                while (!Thread.currentThread().isInterrupted()) {
+                    if (stopping) {
+                        return;
+                    }
+                    if (tunnelStarted && !TProxyService.TProxyIsRunning()) {
+                        failAndStop("tun2socks stopped while VPN was active.");
+                        return;
+                    }
+                    SystemClock.sleep(500L);
+                }
+            }, "NClientBypassVpnMonitor");
+            runtimeMonitorThread = thread;
+            thread.start();
         }
     }
 
@@ -154,8 +203,8 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
             tunFd = descriptor;
             TProxyService.TProxyStartService(configFile.getAbsolutePath(), descriptor.getFd());
             return true;
-        } catch (IOException | PackageManager.NameNotFoundException | SecurityException e) {
-            LogUtility.e("Error starting tun2socks", e);
+        } catch (Throwable t) {
+            LogUtility.e("Error starting tun2socks", t);
             closeTunnelFd();
             deleteTunnelConfig();
             return false;
@@ -210,6 +259,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
     }
 
     private void onProxyExit(int exitCode, boolean stopRequested) {
+        BypassRuntimeStatus.markVpnStopped();
         if (stopRequested) {
             return;
         }
@@ -237,7 +287,13 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
             stopping = true;
         }
 
+        BypassRuntimeStatus.markVpnStopped();
         tunnelStarted = false;
+        Thread monitorThread = runtimeMonitorThread;
+        runtimeMonitorThread = null;
+        if (monitorThread != null && monitorThread != Thread.currentThread()) {
+            monitorThread.interrupt();
+        }
         try {
             TProxyService.TProxyStopService();
         } catch (Throwable t) {

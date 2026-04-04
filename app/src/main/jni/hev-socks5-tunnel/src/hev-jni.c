@@ -51,12 +51,14 @@ static pthread_key_t current_jni_env;
 static void native_start_service (JNIEnv *env, jobject thiz, jstring conig_path,
                                   jint fd);
 static void native_stop_service (JNIEnv *env, jobject thiz);
+static jboolean native_is_running (JNIEnv *env, jobject thiz);
 static jlongArray native_get_stats (JNIEnv *env, jobject thiz);
 
 static JNINativeMethod native_methods[] = {
     { "TProxyStartService", "(Ljava/lang/String;I)V",
       (void *)native_start_service },
     { "TProxyStopService", "()V", (void *)native_stop_service },
+    { "TProxyIsRunning", "()Z", (void *)native_is_running },
     { "TProxyGetStats", "()[J", (void *)native_get_stats },
 };
 
@@ -94,6 +96,10 @@ thread_handler (void *data)
     ThreadData *tdata = data;
 
     hev_socks5_tunnel_main (tdata->path, tdata->fd);
+
+    pthread_mutex_lock (&mutex);
+    is_working = 0;
+    pthread_mutex_unlock (&mutex);
 
     free (tdata->path);
     free (tdata);
@@ -146,6 +152,18 @@ native_stop_service (JNIEnv *env, jobject thiz)
     is_working = 0;
 exit:
     pthread_mutex_unlock (&mutex);
+}
+
+static jboolean
+native_is_running (JNIEnv *env, jobject thiz)
+{
+    jboolean res;
+
+    pthread_mutex_lock (&mutex);
+    res = is_working ? JNI_TRUE : JNI_FALSE;
+    pthread_mutex_unlock (&mutex);
+
+    return res;
 }
 
 static jlongArray

@@ -25,6 +25,7 @@ public class BypassProxyService extends LifecycleService {
     @Override
     public void onCreate() {
         super.onCreate();
+        BypassRuntimeStatus.markProxyServiceCreated();
         BypassNotificationHelper.ensureChannels(this);
         BypassManager.getInstance().initialize(this);
     }
@@ -46,6 +47,7 @@ public class BypassProxyService extends LifecycleService {
 
     @Override
     public void onDestroy() {
+        BypassRuntimeStatus.markProxyStopped();
         super.onDestroy();
     }
 
@@ -57,6 +59,7 @@ public class BypassProxyService extends LifecycleService {
             stopping = false;
         }
 
+        BypassRuntimeStatus.markProxyStarting();
         startForegroundCompat(
             BypassNotificationHelper.buildProxyNotification(
                 this,
@@ -67,6 +70,7 @@ public class BypassProxyService extends LifecycleService {
 
         BypassProxyConfig config = BypassProxyConfig.fromContext(this);
         if (!proxyRuntime.start(config, null, this::onProxyExit)) {
+            failAndStop("Local proxy runtime refused to start.");
             return;
         }
 
@@ -84,6 +88,7 @@ public class BypassProxyService extends LifecycleService {
                 failAndStop("Local proxy did not become reachable in time.");
                 return;
             }
+            BypassRuntimeStatus.markProxyReady();
             updateNotification(getString(R.string.bypass_notification_proxy_active));
             BypassManager.getInstance().updateState(BypassMode.PROXY, BypassStage.RUNNING, null);
         } finally {
@@ -96,6 +101,7 @@ public class BypassProxyService extends LifecycleService {
     }
 
     private void onProxyExit(int exitCode, boolean stopRequested) {
+        BypassRuntimeStatus.markProxyStopped();
         if (stopRequested) {
             return;
         }
@@ -123,6 +129,7 @@ public class BypassProxyService extends LifecycleService {
             stopping = true;
         }
 
+        BypassRuntimeStatus.markProxyStopped();
         proxyRuntime.stop(1000L);
         stopActiveForeground();
 

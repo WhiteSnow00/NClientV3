@@ -12,5 +12,7 @@ public final class TProxyService {
 
     public static native void TProxyStopService();
 
+    public static native boolean TProxyIsRunning();
+
     public static native long[] TProxyGetStats();
 }
