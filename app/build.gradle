@@ -27,6 +27,9 @@ android {
         versionCode = 410901
         multiDexEnabled = true
         versionName = "4.1.9"
+        // Updater source of truth for this fork.
+        buildConfigField "String", "UPDATE_GITHUB_OWNER", "\"WhiteSnow00\""
+        buildConfigField "String", "UPDATE_GITHUB_REPO", "\"NClientV3\""
         vectorDrawables.useSupportLibrary = true
         proguardFiles 'proguard-rules.pro'
         ndk {

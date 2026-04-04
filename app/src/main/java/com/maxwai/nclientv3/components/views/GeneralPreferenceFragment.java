@@ -34,6 +34,7 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SeekBarPreference;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.maxwai.nclientv3.BuildConfig;
 import com.maxwai.nclientv3.CopyToClipboardActivity;
 import com.maxwai.nclientv3.R;
 import com.maxwai.nclientv3.SettingsActivity;
@@ -428,7 +429,10 @@ public class GeneralPreferenceFragment extends PreferenceFragmentCompat {
         {
             Preference bug = Objects.requireNonNull(findPreference(getString(R.string.preference_key_bug)));
             bug.setOnPreferenceClickListener(preference -> {
-                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/maxwai/NClientV3/issues/new"));
+                Intent i = new Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://github.com/" + BuildConfig.UPDATE_GITHUB_OWNER + "/" + BuildConfig.UPDATE_GITHUB_REPO + "/issues/new")
+                );
                 startActivity(i);
                 return true;
             });

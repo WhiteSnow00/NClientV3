@@ -32,8 +32,9 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 public class VersionChecker {
-    private static final String RELEASE_API_URL = "https://api.github.com/repos/maxwai/NClientV3/releases";
-    private static final String LATEST_RELEASE_URL = "https://github.com/maxwai/NClientV3/releases/latest";
+    private static final String GITHUB_REPOSITORY = BuildConfig.UPDATE_GITHUB_OWNER + "/" + BuildConfig.UPDATE_GITHUB_REPO;
+    private static final String RELEASE_API_URL = "https://api.github.com/repos/" + GITHUB_REPOSITORY + "/releases";
+    private static final String LATEST_RELEASE_URL = "https://github.com/" + GITHUB_REPOSITORY + "/releases/latest";
     private static String latest = null;
     private final AppCompatActivity context;
     private String downloadUrl;
@@ -113,6 +114,9 @@ public class VersionChecker {
                 case "tag_name":
                     release.versionCode = jr.nextString();
                     break;
+                case "html_url":
+                    release.htmlUrl = jr.nextString();
+                    break;
                 case "body":
                     release.body = jr.nextString();
                     break;
@@ -162,6 +166,7 @@ public class VersionChecker {
         String finalBody = release.body;
         String latestVersion = release.versionCode;
         boolean beta = release.beta;
+        String releasePageUrl = release.htmlUrl != null ? release.htmlUrl : LATEST_RELEASE_URL;
         if (finalBody == null) return;
         finalBody = finalBody
             .replace("\r\n", "\n")//Remove ugly newline
@@ -183,7 +188,7 @@ public class VersionChecker {
             }
         }).setNegativeButton(R.string.cancel, null)
             .setNeutralButton(R.string.github, (dialog, which) -> {
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(LATEST_RELEASE_URL));
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(releasePageUrl));
                 context.startActivity(browserIntent);
             });
         if (!context.isFinishing()) builder.show();
@@ -249,7 +254,7 @@ public class VersionChecker {
     public static class GitHubRelease {
         // regex to get version in the form: MM.mm.pp(-suffix)
         private final static String regex = "(\\d+)\\.(\\d+)\\.(\\d+)(?:-((?:pre|rc)\\d))?";
-        String versionCode, body, downloadUrl;
+        String versionCode, body, downloadUrl, htmlUrl;
         boolean beta;
 
         public boolean isNewerThenVersion(String currentVersion) throws IllegalArgumentException {
