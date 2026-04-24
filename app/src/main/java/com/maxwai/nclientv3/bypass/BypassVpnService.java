@@ -24,7 +24,7 @@ import java.net.Socket;
 
 public class BypassVpnService extends LifecycleTunnelVpnService implements BypassSocketProtector {
     private static final int NOTIFICATION_ID = 4010;
-    private static final long PROXY_READY_TIMEOUT_MS = 5000L;
+    private static final long PROXY_READY_TIMEOUT_MS = 2500L;
 
     private final Object serviceLock = new Object();
     private final BypassProxyRuntime proxyRuntime = new BypassProxyRuntime();
@@ -135,7 +135,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
                 failAndStop("Unable to establish tun2socks.");
                 return;
             }
-            if (!waitForTun2Socks(1500L)) {
+            if (!waitForTun2Socks(750L)) {
                 failAndStop("tun2socks exited before VPN became ready.");
                 return;
             }
@@ -162,7 +162,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
             if (TProxyService.TProxyIsRunning()) {
                 return true;
             }
-            SystemClock.sleep(100L);
+            SystemClock.sleep(50L);
         }
         return TProxyService.TProxyIsRunning();
     }
@@ -181,7 +181,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
                         failAndStop("tun2socks stopped while VPN was active.");
                         return;
                     }
-                    SystemClock.sleep(500L);
+                    SystemClock.sleep(250L);
                 }
             }, "NClientBypassVpnMonitor");
             runtimeMonitorThread = thread;
@@ -301,7 +301,7 @@ public class BypassVpnService extends LifecycleTunnelVpnService implements Bypas
         }
         closeTunnelFd();
         deleteTunnelConfig();
-        proxyRuntime.stop(1000L);
+        proxyRuntime.stop(500L);
         BypassManager.getInstance().setDirectSocketProtector(null);
         stopActiveForeground();
 

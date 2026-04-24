@@ -48,10 +48,10 @@ public final class BypassProxyRuntime {
                 return false;
             }
             try (Socket socket = new Socket()) {
-                socket.connect(new InetSocketAddress(ip, port), 500);
+                socket.connect(new InetSocketAddress(ip, port), 250);
                 return true;
             } catch (IOException ignore) {
-                SystemClock.sleep(200L);
+                SystemClock.sleep(100L);
             }
         }
         return false;

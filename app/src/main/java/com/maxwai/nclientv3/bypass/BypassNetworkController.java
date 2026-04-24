@@ -42,15 +42,15 @@ import okhttp3.Response;
 
 public final class BypassNetworkController implements BypassStateStore.Listener {
     private static final BypassNetworkController INSTANCE = new BypassNetworkController();
-    private static final long VPN_PERMISSION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45);
-    private static final long VPN_START_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(15);
-    private static final long VPN_STOP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(8);
-    private static final long DIRECT_PROBE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(3);
-    private static final long BYPASS_PROBE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(4);
-    private static final long INVALID_CONTENT_WINDOW_MS = TimeUnit.MINUTES.toMillis(2);
-    private static final long ACTIVATION_DEBOUNCE_MS = TimeUnit.SECONDS.toMillis(20);
-    private static final long DIRECT_PROBE_BASE_COOLDOWN_MS = TimeUnit.MINUTES.toMillis(3);
-    private static final long DIRECT_PROBE_MAX_COOLDOWN_MS = TimeUnit.MINUTES.toMillis(15);
+    private static final long VPN_PERMISSION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(22);
+    private static final long VPN_START_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(8);
+    private static final long VPN_STOP_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(4);
+    private static final long DIRECT_PROBE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(1500);
+    private static final long BYPASS_PROBE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(2);
+    private static final long INVALID_CONTENT_WINDOW_MS = TimeUnit.MINUTES.toMillis(1);
+    private static final long ACTIVATION_DEBOUNCE_MS = TimeUnit.SECONDS.toMillis(10);
+    private static final long DIRECT_PROBE_BASE_COOLDOWN_MS = TimeUnit.MINUTES.toMillis(90);
+    private static final long DIRECT_PROBE_MAX_COOLDOWN_MS = TimeUnit.MINUTES.toMillis(8);
 
     private final ConcurrentHashMap<String, HostAccessRecord> hostAccess = new ConcurrentHashMap<>();
     @Nullable
@@ -236,7 +236,7 @@ public final class BypassNetworkController implements BypassStateStore.Listener 
                 return false;
             }
             try {
-                Thread.sleep(100L);
+                Thread.sleep(50L);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return false;

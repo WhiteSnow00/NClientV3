@@ -14,7 +14,7 @@ import com.maxwai.nclientv3.utility.LogUtility;
 
 public class BypassProxyService extends LifecycleService {
     private static final int NOTIFICATION_ID = 4011;
-    private static final long PROXY_READY_TIMEOUT_MS = 5000L;
+    private static final long PROXY_READY_TIMEOUT_MS = 2500L;
 
     private final Object serviceLock = new Object();
     private final BypassProxyRuntime proxyRuntime = new BypassProxyRuntime();

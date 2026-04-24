@@ -378,8 +378,8 @@ public class Queries {
          * Returns a List of all tags which are AVOIDED or ACCEPTED of a specific type
          */
         public static List<Tag> getAllFilteredByType(TagType type) {
-            String query = "SELECT * FROM " + TABLE_NAME + " WHERE " + STATUS + " != ?";
-            return getTagsFromCursor(db.rawQuery(query, new String[]{"" + TagStatus.DEFAULT.ordinal()}));
+            String query = "SELECT * FROM " + TABLE_NAME + " WHERE " + STATUS + " != ? AND " + TYPE + "=?";
+            return getTagsFromCursor(db.rawQuery(query, new String[]{"" + TagStatus.DEFAULT.ordinal(), "" + type.getId()}));
         }
 
         /**
