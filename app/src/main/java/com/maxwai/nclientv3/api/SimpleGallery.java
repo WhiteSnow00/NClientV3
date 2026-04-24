@@ -150,19 +150,20 @@ public class SimpleGallery extends GenericGallery {
     }
 
     private static String parseTitle(JSONObject json) {
-        String resolved = json.optString("english_title");
-        if (resolved.isEmpty()) resolved = json.optString("pretty_title");
-        if (resolved.isEmpty()) resolved = json.optString("title");
-        if (resolved.isEmpty()) {
-            JSONObject title = json.optJSONObject("title");
-            if (title != null) {
-                resolved = title.optString("english");
-                if (resolved.isEmpty()) resolved = title.optString("pretty");
-                if (resolved.isEmpty()) resolved = title.optString("japanese");
+        String[] keys = {"english_title", "pretty_title", "title", "japanese_title"};
+        for (String key : keys) {
+            String resolved = json.optString(key);
+            if (!resolved.isEmpty()) return resolved;
+        }
+        JSONObject title = json.optJSONObject("title");
+        if (title != null) {
+            String[] titleKeys = {"english", "pretty", "japanese"};
+            for (String key : titleKeys) {
+                String resolved = title.optString(key);
+                if (!resolved.isEmpty()) return resolved;
             }
         }
-        if (resolved.isEmpty()) resolved = json.optString("japanese_title");
-        return resolved.isEmpty() ? "Unnamed" : resolved;
+        return "Unnamed";
     }
 
     private static String resolveThumbnailPath(JSONObject json) {

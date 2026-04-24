@@ -122,7 +122,6 @@ public class GalleryDownloaderV2 {
     private void onEnd() {
         setStatus(Status.FINISHED);
         for (DownloadObserver observer : observers) observer.triggerEndDownload(this);
-        LogUtility.d("Delete 75: " + id);
         Queries.DownloadTable.removeGallery(id);
     }
 
@@ -214,7 +213,6 @@ public class GalleryDownloaderV2 {
         if (this.status == status) return;
         this.status = status;
         if (status == Status.CANCELED) {
-            LogUtility.d("Delete 95: " + id);
             onCancel();
             Global.recursiveDelete(folder);
             Queries.DownloadTable.removeGallery(id);
@@ -241,7 +239,7 @@ public class GalleryDownloaderV2 {
 
     private void downloadPage(PageContainer page) {
         if (savePage(page)) {
-            urls.remove(page);
+            urls.remove(0);
             onUpdate();
         }
     }
@@ -251,6 +249,8 @@ public class GalleryDownloaderV2 {
         if (path.endsWith(".jpg") || path.endsWith(".jpeg")) {
             return Global.isJPEGCorrupted(path);
         }
+        // Quick size check before expensive decode
+        if (file.length() == 0) return true;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = 256;
         Bitmap bitmap = BitmapFactory.decodeFile(path, options);

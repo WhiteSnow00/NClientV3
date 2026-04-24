@@ -678,9 +678,8 @@ public class Queries {
         }
 
         private static void cleanHistory() {
-            //noinspection StatementWithEmptyBody
-            while (db.delete(TABLE_NAME, "(SELECT COUNT(*) FROM " + TABLE_NAME + ")>? AND " + TIME + "=(SELECT MIN(" + TIME + ") FROM " + TABLE_NAME + ")", new String[]{"" + Global.getMaxHistory()}) == 1)
-                ;
+            int maxHistory = Global.getMaxHistory();
+            db.execSQL("DELETE FROM " + TABLE_NAME + " WHERE " + TIME + " NOT IN (SELECT " + TIME + " FROM " + TABLE_NAME + " ORDER BY " + TIME + " DESC LIMIT " + maxHistory + ")");
         }
     }
 

@@ -97,13 +97,13 @@ public class ImageDownloadUtility {
                     public boolean onResourceReady(@NonNull Drawable resource, @NonNull Object model, Target<Drawable> target, @NonNull DataSource dataSource, boolean isFirstResource) {
                         if (gallery != null && !gallery.getGalleryData().getCheckedExt())
                             gallery.getGalleryData().setCheckedExt();
-                        new Handler(context.getMainLooper()).post(() -> {
+                        // Drain queue synchronously to avoid race conditions from multiple concurrent completions
+                        //noinspection DataFlowIssue
+                        List<Runnable> queue = imageDownloadQueue.get(gallery);
+                        while (queue != null && !queue.isEmpty()) {
                             //noinspection DataFlowIssue
-                            while (imageDownloadQueue.containsKey(gallery) && !imageDownloadQueue.get(gallery).isEmpty()) {
-                                //noinspection DataFlowIssue
-                                imageDownloadQueue.get(gallery).remove(0).run();
-                            }
-                        });
+                            queue.remove(0).run();
+                        }
                         return false;
                     }
                 })
@@ -178,7 +178,6 @@ public class ImageDownloadUtility {
             if (!triedExtensions.contains(gallery.getPageExtension(page))) {
                 LogUtility.d("Trying again with extension " + gallery.getPageExtension(page).getName());
                 triedExtensions.add(gallery.getPageExtension(page));
-                gallery.setPageExtension(page, gallery.getPageExtension(page));
                 loadImageOp(context, imageView, gallery, () -> getUrlForGallery(gallery, page, shouldFull), angle, this, true);
             }
             LogUtility.d("Failed getting image with extension " + gallery.getPageExtensionString(page));
@@ -189,7 +188,6 @@ public class ImageDownloadUtility {
                     LogUtility.d("Trying again with extension " + imageExt.getName());
                     triedExtensions.add(imageExt);
                     gallery.setPageExtensionFrom(page, imageExt);
-                    getUrlForGallery(gallery, page, shouldFull);
                     loadImageOp(context, imageView, gallery, () -> getUrlForGallery(gallery, page, shouldFull), angle, this, true);
                 });
         }

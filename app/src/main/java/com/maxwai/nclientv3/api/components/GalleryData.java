@@ -369,7 +369,6 @@ public class GalleryData implements Parcelable {
     }
 
     private void readPagePathNew(String path, int galleryId) {
-        System.out.println(path);
         String[] parts = path.split(";");
         cover = new Page(ImageType.COVER, Page.stringToExt(parts[1]));
         thumbnail = new Page(ImageType.THUMBNAIL, Page.stringToExt(parts[2]));
@@ -386,7 +385,6 @@ public class GalleryData implements Parcelable {
             readPagePathNew(path, galleryId);
             return;
         }
-        System.out.println(path);
         StringReader reader = new StringReader(path + "e");//flag for the end
         int absolutePage = 0;
         int actualChar;

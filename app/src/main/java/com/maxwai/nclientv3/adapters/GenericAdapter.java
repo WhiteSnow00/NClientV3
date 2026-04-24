@@ -71,13 +71,15 @@ public abstract class GenericAdapter<T extends GenericGallery> extends RecyclerV
                             return;
                         }
                     }
+                    int oldCount = filter.size();
                     filter = (List<T>) results.values;
-                    if (filter.size() > results.count)
-                        notifyItemRangeInserted(results.count, filter.size() - results.count);
-                    else if (filter.size() < results.count)
-                        notifyItemRangeRemoved(filter.size(), results.count - filter.size());
-                    notifyItemRangeRemoved(filter.size(), results.count);
-                    notifyItemRangeChanged(0, filter.size() - 1);
+                    int newCount = filter.size();
+                    if (oldCount > newCount) {
+                        notifyItemRangeRemoved(newCount, oldCount - newCount);
+                    } else if (oldCount < newCount) {
+                        notifyItemRangeInserted(oldCount, newCount - oldCount);
+                    }
+                    notifyItemRangeChanged(0, Math.min(oldCount, newCount));
                 }
             }
         };

@@ -41,7 +41,6 @@ public class Gallery extends GenericGallery {
     public static final Creator<Gallery> CREATOR = new Creator<>() {
         @Override
         public Gallery createFromParcel(Parcel in) {
-            LogUtility.d("Reading to parcel");
             return new Gallery(in);
         }
 
@@ -108,8 +107,7 @@ public class Gallery extends GenericGallery {
     public static String getPathTitle(@Nullable String title, @NonNull String defaultValue) {
         if (title == null) return defaultValue;
         String pathTitle = title.replace('/', ' ').replaceAll("[/|\\\\*\"'?:<>]", " ");
-        while (pathTitle.contains("  "))
-            pathTitle = pathTitle.replace("  ", " ");
+        pathTitle = pathTitle.replaceAll(" +", " ");
         return pathTitle.trim();
     }
 
