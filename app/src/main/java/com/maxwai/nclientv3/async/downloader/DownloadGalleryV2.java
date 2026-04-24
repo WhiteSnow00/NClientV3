@@ -23,7 +23,6 @@ import com.maxwai.nclientv3.settings.NotificationSettings;
 import com.maxwai.nclientv3.utility.LogUtility;
 import com.maxwai.nclientv3.utility.Utility;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -64,17 +63,13 @@ public class DownloadGalleryV2 extends Worker {
     }
 
     public static void loadDownloads(Context context) {
-        try {
-            List<GalleryDownloaderManager> g = Queries.DownloadTable.getAllDownloads(context);
-            for (GalleryDownloaderManager gg : g) {
-                gg.downloader().setStatus(GalleryDownloaderV2.Status.PAUSED);
-                DownloadQueue.add(gg);
-            }
-            new PageChecker().start();
-            startWork(context);
-        } catch (IOException e) {
-            LogUtility.e(e, e);
+        List<GalleryDownloaderManager> g = Queries.DownloadTable.getAllDownloads(context);
+        for (GalleryDownloaderManager gg : g) {
+            gg.downloader().setStatus(GalleryDownloaderV2.Status.PAUSED);
+            DownloadQueue.add(gg);
         }
+        new PageChecker().start();
+        startWork(context);
     }
 
     public static void downloadRange(Context context, Gallery gallery, int start, int end) {
@@ -119,14 +114,10 @@ public class DownloadGalleryV2 extends Worker {
     }
 
     private void reloadQueueFromDatabase() {
-        try {
-            List<GalleryDownloaderManager> entries = Queries.DownloadTable.getAllDownloads(getApplicationContext());
-            for (GalleryDownloaderManager gg : entries) {
-                gg.downloader().setStatus(GalleryDownloaderV2.Status.PAUSED);
-                DownloadQueue.add(gg);
-            }
-        } catch (IOException e) {
-            LogUtility.w("Failed to reload download queue", e);
+        List<GalleryDownloaderManager> entries = Queries.DownloadTable.getAllDownloads(getApplicationContext());
+        for (GalleryDownloaderManager gg : entries) {
+            gg.downloader().setStatus(GalleryDownloaderV2.Status.PAUSED);
+            DownloadQueue.add(gg);
         }
     }
 
