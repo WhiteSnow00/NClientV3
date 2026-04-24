@@ -59,7 +59,7 @@ public class GalleryData implements Parcelable {
     }
 
     public GalleryData(JsonReader jr) throws IOException {
-        this(null);
+        this((Context) null);
         parseJSON(jr);
     }
 
@@ -102,7 +102,7 @@ public class GalleryData implements Parcelable {
     }
 
     public static GalleryData fakeData() {
-        GalleryData galleryData = new GalleryData(null);
+        GalleryData galleryData = new GalleryData((Context) null);
         galleryData.id = SpecialTagIds.INVALID_ID;
         galleryData.favoriteCount = -1;
         galleryData.pageCount = -1;
