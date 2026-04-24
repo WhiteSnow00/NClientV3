@@ -64,22 +64,12 @@ public class FavoriteAdapter extends RecyclerView.Adapter<GenericAdapter.ViewHol
     private Gallery galleryFromPosition(int position) {
         if (galleries[position] != null) return galleries[position];
         cursor.moveToPosition(position);
-        try {
-            int defaultColor = StatusManager.getByName(StatusManager.DEFAULT_STATUS).color;
-            int colorIndex = cursor.getColumnIndex("color");
-            int statusColor = colorIndex >= 0 ? cursor.getInt(colorIndex) : 0;
-            int idIndex = cursor.getColumnIndex(Queries.GalleryTable.IDGALLERY);
-            int id = idIndex >= 0 ? cursor.getInt(idIndex) : -1;
-            if (id >= 0 && statuses.indexOfKey(id) < 0) {
-                statuses.put(id, statusColor == 0 ? defaultColor : statusColor);
-            }
-            Gallery g = Queries.GalleryTable.cursorToGallery(cursor);
-            galleries[position] = g;
-            return g;
-        } catch (IOException e) {
-            LogUtility.w("Couldn't get gallery From Position", e);
-            return null;
+        Gallery g = Queries.GalleryTable.cursorToGallery(activity, cursor);
+        galleries[position] = g;
+        if (g.getGalleryData().hasUpdatedInfo()) {
+            Queries.GalleryTable.insert(g);
         }
+        return g;
     }
 
     @Override

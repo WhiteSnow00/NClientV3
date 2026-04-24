@@ -70,13 +70,13 @@ public class Gallery extends GenericGallery {
         onlineFavorite = isFavorite;
     }
 
-    public Gallery(Cursor cursor, TagList tags) throws IOException {
+    public Gallery(Context context, Cursor cursor, TagList tags) {
         maxSize.setWidth(cursor.getInt(Queries.getColumnFromName(cursor, Queries.GalleryTable.MAX_WIDTH)));
         maxSize.setHeight(cursor.getInt(Queries.getColumnFromName(cursor, Queries.GalleryTable.MAX_HEIGHT)));
         minSize.setWidth(cursor.getInt(Queries.getColumnFromName(cursor, Queries.GalleryTable.MIN_WIDTH)));
         minSize.setHeight(cursor.getInt(Queries.getColumnFromName(cursor, Queries.GalleryTable.MIN_HEIGHT)));
-        galleryData = new GalleryData(cursor, tags);
-        folder = GalleryFolder.fromId(null, galleryData.getId());
+        galleryData = new GalleryData(context, cursor, tags);
+        folder = GalleryFolder.fromId(context, galleryData.getId());
         this.language = loadLanguage(tags);
         onlineFavorite = false;
         LogUtility.d(toString());
